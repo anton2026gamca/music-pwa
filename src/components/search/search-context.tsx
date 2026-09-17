@@ -1,21 +1,21 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { SongResult } from '@/app/api/actions';
+import { SongData } from '@/app/api/actions';
 
 interface SearchContextType {
   cachedQuery: string;
-  cachedVideos: SongResult[];
-  setCache: (query: string, videos: SongResult[]) => void;
+  cachedVideos: SongData[];
+  setCache: (query: string, videos: SongData[]) => void;
 }
 
 const SearchContext = createContext<SearchContextType | undefined>(undefined);
 
 export function SearchProvider({ children }: { children: ReactNode }) {
   const [cachedQuery, setCachedQuery] = useState('');
-  const [cachedVideos, setCachedVideos] = useState<SongResult[]>([]);
+  const [cachedVideos, setCachedVideos] = useState<SongData[]>([]);
 
-  const setCache = (query: string, videos: SongResult[]) => {
+  const setCache = (query: string, videos: SongData[]) => {
     setCachedQuery(query);
     setCachedVideos(videos);
   };

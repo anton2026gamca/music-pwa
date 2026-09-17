@@ -2,13 +2,14 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { searchSongs, SongResult } from '@/app/api/actions';
+import { searchSongs, SongData } from '@/app/api/actions';
 import SongCard from '@/components/search/song-item';
-
-import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Music4, SearchX } from "lucide-react";
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import dynamic from 'next/dynamic';
+
+// shadcn/ui (Base UI engine) variants 
+import { Card, CardContent } from "@/components/ui/card";
 
 const SearchBar = dynamic(() => import('@/components/search/search-bar'), { ssr: false });
 
@@ -17,7 +18,7 @@ function SearchPageContent() {
   const searchParams = useSearchParams();
   const targetQuery = searchParams.get('q') || '';
 
-  const [videos, setVideos] = useState<SongResult[]>([]);
+  const [videos, setVideos] = useState<SongData[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
@@ -78,10 +79,24 @@ function SearchPageContent() {
           </div>
         ) : (
           videos.length > 0 ? (
-            <div className="flex flex-col">
-              {videos.map((song) => (
-                <SongCard key={song.id} video={song} />
-              ))}
+            <div className="flex flex-col gap-2">
+              {videos.map((song) => {
+                const handleSelectSong = () => {
+                  // Instant handoff: cache song context locally before navigation triggers
+                  sessionStorage.setItem(`song_${song.id}`, JSON.stringify(song));
+                  router.push(`/watch?id=${song.id}&from=${encodeURIComponent(targetQuery)}`);
+                };
+
+                return (
+                  <button
+                    key={song.id}
+                    onClick={handleSelectSong}
+                    className="w-full text-left transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
+                  >
+                    <SongCard video={song} />
+                  </button>
+                );
+              })}
             </div>
           ) : (
             hasSearched && (

@@ -2,31 +2,22 @@
 
 import { useState, useEffect } from 'react';
 
-import { SongResult } from '@/app/api/actions';
+import { SongData } from '@/app/api/actions';
 import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from '../ui/item';
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { formatDuration } from '@/lib/utils';
 
 interface VideoCardProps {
-  video: SongResult;
+  video: SongData;
 }
 
 export default function SongCard({ video: song }: VideoCardProps) {
-  const formatSeconds = (sec: number): string => [
-    Math.floor(sec / 3600),
-    Math.floor((sec % 3600) / 60),
-    sec % 60
-  ]
-    .map((v, i) => i === 0 && v === 0 ? '' : String(v).padStart(2, '0'))
-    .filter(Boolean)
-    .join(':')
-    .replace(/^0/, '');
-
   const videoId = song.id;
   const title = song.title;
   const artistName = song.artistName;
-  const duration = song.duration ? formatSeconds(song.duration) : null;
+  const duration = song.duration ? formatDuration(song.duration) : null;
   const thumbnailUrl = song.thumbnailUrl;
 
   const [isSavedOffline, setIsSavedOffline] = useState(false);
