@@ -58,7 +58,7 @@ function SearchPageContent() {
 
   return (
     <main className="min-h-screen bg-background text-foreground py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto space-y-10">
+      <div className="max-w-4xl mx-auto space-y-10">
         <header className="text-center space-y-2">
           <div className="inline-flex items-center justify-center p-3 bg-muted text-muted-foreground rounded-full">
             <Music4 className="h-6 w-6" />

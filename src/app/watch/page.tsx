@@ -2,10 +2,10 @@
 
 import { useSearchParams } from "next/navigation";
 import { getSongDetails, SongData } from "../api/actions";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Loader2, AlertCircle, ArrowDownToLine } from "lucide-react";
+import { Loader2, AlertCircle, ArrowDownToLine, Pause, Play } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { buttonVariants } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { downloadLyricsAsset, downloadThumbnailAsset, downloadVideoAsset, getOfflineAssets, OfflineAssets, revokeBlobUrls } from "@/lib/watch/utils";
 import { OfflineStatus } from "@/components/watch/offline-status";
+import { PlayPauseOverlay } from "@/components/watch/play-pause-overlay";
 
 function WatchPageContent() {
   const searchParams = useSearchParams();
@@ -34,6 +35,11 @@ function WatchPageContent() {
     lyrics: null,
   });
   const thumbnailUrl = offlineAssets.thumbnailUrl ?? song?.thumbnailUrl ?? '';
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const [isPaused, setIsPaused] = useState(true);
+  const [triggerCount, setTriggerCount] = useState(0);
 
   useEffect(() => {
     if (!songIdParam) {
@@ -81,6 +87,26 @@ function WatchPageContent() {
     };
   }, [song?.id, videoDownloading, lyricsDownloading, thumbnailDownloading]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
+      if (event.code === 'Space') {
+        event.preventDefault();
+        handlePlayPause();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   const handleDownload = async () => {
     if (!song?.id) {
       setError("No song available to download.");
@@ -125,6 +151,20 @@ function WatchPageContent() {
     }
   };
 
+  const handlePlayPause = () => {
+    if (!audioRef.current) return;
+
+    if (audioRef.current.paused) {
+      audioRef.current.play();
+      setIsPaused(false);
+    } else {
+      audioRef.current.pause();
+      setIsPaused(true);
+    }
+
+    setTriggerCount(prev => prev + 1);
+  }
+
   if (loading) {
     return (
       <div className="flex flex-col lg:flex-row w-full min-h-screen mx-auto items-stretch lg:max-h-screen">
@@ -167,15 +207,21 @@ function WatchPageContent() {
   return (
     <div className="flex flex-col lg:flex-row w-full h-full items-stretch">
       <div className="w-full lg:w-2/3 space-y-3 p-4">
-        <div className="relative aspect-video w-full bg-black rounded-lg overflow-hidden">
+        <div className="relative aspect-square md:aspect-video w-full bg-black rounded-lg overflow-hidden">
           {offlineAssets.isOffline
             ? (
               <>
-                <Image src={thumbnailUrl} alt={song.title} width={200} height={200} className="object-cover" />
+                <Image
+                  src={thumbnailUrl} alt={song.title} fill
+                  className="object-cover"
+                  onClick={() => handlePlayPause()}
+                />
+                <PlayPauseOverlay isPaused={isPaused} triggerCount={triggerCount} />
                 <audio
+                  ref={audioRef}
                   src={offlineAssets.videoUrl}
                   controls
-                  className="w-full"
+                  className="w-full absolute bottom-0"
                   preload="auto"
                 />
               </>
@@ -208,13 +254,6 @@ function WatchPageContent() {
             <h2 className="text-xl font-semibold tracking-tight">{song.title}</h2>
             <p className="text-sm text-muted-foreground">{song.artistName}</p>
           </div>
-
-          {offlineAssets.fileSize && (
-            <div className="flex items-center gap-1.5 bg-green-500/10 dark:bg-green-500/20 text-green-600 dark:text-green-400 text-xs font-medium px-2.5 py-1 rounded-full border border-green-500/20">
-              <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-              <span>Offline ({offlineAssets.fileSize})</span>
-            </div>
-          )}
         </div>
       </div>
 
