@@ -99,7 +99,7 @@ export function OfflineStatus({ offlineAssets, videoDownloading, lyricsDownloadi
         })}
       </div>
 
-      {(!hasVideo || !hasLyrics || !hasThumbnail) && (
+      {(!hasVideo || !hasLyrics || !hasThumbnail) && (!videoDownloading && !lyricsDownloading && !thumbnailDownloading) && (
         <Button className="" onClick={onDownloadClick}>
           Download All
         </Button>
