@@ -2,9 +2,9 @@
 
 import { Video, Music, Image as ImageIcon, Check, X, Loader2 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
-import { OfflineAssets } from '@/lib/watch/utils';
-import { Separator } from '../ui/separator';
-import { Button } from '../ui/button';
+import { OfflineAssets } from '../_lib/download-utils';
+import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
 
 interface OfflineStatusProps {
   offlineAssets: OfflineAssets;
