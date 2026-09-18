@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { searchSongs, SongData } from '@/app/api/actions';
-import SongCard from '@/components/search/song-item';
+import { SongItem } from '@/components/song-item';
 import { Loader2, Music4, SearchX } from "lucide-react";
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import dynamic from 'next/dynamic';
@@ -18,7 +18,7 @@ function SearchPageContent() {
   const searchParams = useSearchParams();
   const targetQuery = searchParams.get('q') || '';
 
-  const [videos, setVideos] = useState<SongData[]>([]);
+  const [songs, setSongs] = useState<SongData[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
@@ -28,7 +28,7 @@ function SearchPageContent() {
     const cachedData = sessionStorage.getItem(`search_cache_${targetQuery}`);
 
     if (cachedData) {
-      setVideos(JSON.parse(cachedData));
+      setSongs(JSON.parse(cachedData));
       setHasSearched(true);
       return;
     }
@@ -39,11 +39,11 @@ function SearchPageContent() {
       try {
         const results = await searchSongs(targetQuery);
         const validResults = results || [];
-        setVideos(validResults);
+        setSongs(validResults);
         sessionStorage.setItem(`search_cache_${targetQuery}`, JSON.stringify(validResults));
       } catch (error) {
         console.error('Error fetching data:', error);
-        setVideos([]);
+        setSongs([]);
       } finally {
         setLoading(false);
       }
@@ -78,11 +78,10 @@ function SearchPageContent() {
             <p className="text-sm font-medium text-muted-foreground">Searching...</p>
           </div>
         ) : (
-          videos.length > 0 ? (
+          songs.length > 0 ? (
             <div className="flex flex-col gap-2">
-              {videos.map((song) => {
+              {songs.map((song) => {
                 const handleSelectSong = () => {
-                  // Instant handoff: cache song context locally before navigation triggers
                   sessionStorage.setItem(`song_${song.id}`, JSON.stringify(song));
                   router.push(`/watch?id=${song.id}&from=${encodeURIComponent(targetQuery)}`);
                 };
@@ -93,7 +92,7 @@ function SearchPageContent() {
                     onClick={handleSelectSong}
                     className="w-full text-left transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
                   >
-                    <SongCard video={song} />
+                    <SongItem song={song} />
                   </button>
                 );
               })}

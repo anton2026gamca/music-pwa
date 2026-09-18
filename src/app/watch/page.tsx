@@ -14,6 +14,9 @@ import { Separator } from "@/components/ui/separator";
 import { downloadLyricsAsset, downloadThumbnailAsset, downloadVideoAsset, getOfflineAssets, OfflineAssets, revokeBlobUrls } from "./_lib/download-utils";
 import { OfflineStatus } from "./_components/offline-status";
 import { PlayPauseOverlay } from "./_components/play-pause-overlay";
+import { useDownloadedSongs } from "@/hooks/use-downloaded-songs";
+import { SongItem } from "@/components/song-item";
+import { SongPlaylist } from "@/components/song-playlist";
 
 function WatchPageContent() {
   const searchParams = useSearchParams();
@@ -40,6 +43,8 @@ function WatchPageContent() {
 
   const [isPaused, setIsPaused] = useState(true);
   const [triggerCount, setTriggerCount] = useState(0);
+
+  const { downloadedSongs, addDownloadedSong, removeDownloadedSong, isSongDownloaded, getDownloadedSong } = useDownloadedSongs();
 
   useEffect(() => {
     if (!songIdParam) {
@@ -78,6 +83,13 @@ function WatchPageContent() {
 
       activeVideoSrc = assets.videoUrl;
       activeThumbSrc = assets.thumbnailUrl;
+
+      console.log("Offline assets loaded:", assets);
+      if (assets.isOffline && !isSongDownloaded(song.id)) {
+        addDownloadedSong(song);
+      } else if (!assets.isOffline && isSongDownloaded(song.id)) {
+        removeDownloadedSong(song.id);
+      }
     };
 
     loadMediaContext();
@@ -167,21 +179,28 @@ function WatchPageContent() {
 
   if (loading) {
     return (
-      <div className="flex flex-col lg:flex-row w-full min-h-screen mx-auto items-stretch lg:max-h-screen">
-        <div className="w-full lg:w-2/3 space-y-3 p-4">
-          <div className="relative aspect-video w-full bg-black rounded-lg overflow-hidden">
-            <Skeleton className="absolute inset-0 w-full h-full" />
-          </div>
-          <div className="px-1">
-            <Skeleton className="h-6 w-1/4" />
-            <Skeleton className="h-4 w-1/4 mt-2" />
-          </div>
+      <div className="flex w-full h-full items-stretch">
+        <div className="w-80 hidden md:block">
         </div>
 
-        <Separator orientation="vertical" className="hidden lg:block h-auto min-h-full" />
-        <Separator orientation="horizontal" className="block lg:hidden my-2" />
+        <Separator orientation="vertical" className="hidden md:block h-auto min-h-full" />
 
-        <div className="w-full lg:w-1/3 flex flex-col overflow-auto p-4">
+        <div className="flex flex-col lg:flex-row w-full min-h-screen mx-auto items-stretch lg:max-h-screen">
+          <div className="w-full lg:w-2/3 space-y-3 p-4">
+            <div className="relative aspect-video w-full bg-black rounded-lg overflow-hidden">
+              <Skeleton className="absolute inset-0 w-full h-full" />
+            </div>
+            <div className="px-1">
+              <Skeleton className="h-6 w-1/4" />
+              <Skeleton className="h-4 w-1/4 mt-2" />
+            </div>
+          </div>
+
+          <Separator orientation="vertical" className="hidden lg:block h-auto min-h-full" />
+          <Separator orientation="horizontal" className="block lg:hidden my-2" />
+
+          <div className="w-full lg:w-1/3 flex flex-col overflow-auto p-4">
+          </div>
         </div>
       </div>
     );
@@ -206,7 +225,8 @@ function WatchPageContent() {
 
   return (
     <div className="flex w-full h-full items-stretch">
-      <div className="w-60 hidden md:block">
+      <div className="w-80 hidden md:block">
+        <SongPlaylist title="Downloaded Songs" songs={downloadedSongs} />
       </div>
 
       <Separator orientation="vertical" className="hidden md:block h-auto min-h-full" />
