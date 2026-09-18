@@ -5,38 +5,44 @@ import { getSongDetails, SongData } from "../api/actions";
 import { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, ArrowDownToLine } from "lucide-react";
 
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-
-function formatDuration(seconds?: number): string {
-  if (!seconds) return "--:--";
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
-}
+import { downloadLyricsAsset, downloadThumbnailAsset, downloadVideoAsset, getOfflineAssets, OfflineAssets, revokeBlobUrls } from "@/lib/watch/utils";
+import { OfflineStatus } from "@/components/watch/offline-status";
 
 function WatchPageContent() {
   const searchParams = useSearchParams();
-  const videoId = searchParams.get("id");
+  const songIdParam = searchParams.get("id");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [song, setSong] = useState<SongData | null>(null);
 
+  const [videoDownloading, setVideoDownloading] = useState(false);
+  const [lyricsDownloading, setLyricsDownloading] = useState(false);
+  const [thumbnailDownloading, setThumbnailDownloading] = useState(false);
+
+  const [offlineAssets, setOfflineAssets] = useState<OfflineAssets>({
+    isOffline: false,
+    videoUrl: '',
+    fileSize: null,
+    thumbnailUrl: null,
+    lyrics: null,
+  });
+  const thumbnailUrl = offlineAssets.thumbnailUrl ?? song?.thumbnailUrl ?? '';
+
   useEffect(() => {
-    if (!videoId) {
+    if (!songIdParam) {
       setError("No song ID provided.");
       setLoading(false);
       return;
     }
 
-    const forwardedSong = sessionStorage.getItem(`song_${videoId}`);
+    const forwardedSong = sessionStorage.getItem(`song_${songIdParam}`);
     if (forwardedSong) {
       setSong(JSON.parse(forwardedSong));
       setLoading(false);
@@ -44,14 +50,80 @@ function WatchPageContent() {
     }
 
     setLoading(true);
-    getSongDetails(videoId)
+    getSongDetails(songIdParam)
       .then((songData) => {
         if (songData) setSong(songData);
         else setError("Could not retrieve song details.");
       })
       .catch(() => setError("An unexpected server error occurred."))
       .finally(() => setLoading(false));
-  }, [videoId]);
+  }, [songIdParam]);
+
+  useEffect(() => {
+    if (!song?.id) return;
+
+    let activeVideoSrc: string | null = null;
+    let activeThumbSrc: string | null = null;
+
+    const loadMediaContext = async () => {
+      const assets = await getOfflineAssets(song.id);
+
+      setOfflineAssets(assets);
+
+      activeVideoSrc = assets.videoUrl;
+      activeThumbSrc = assets.thumbnailUrl;
+    };
+
+    loadMediaContext();
+
+    return () => {
+      revokeBlobUrls(activeVideoSrc, activeThumbSrc);
+    };
+  }, [song?.id, videoDownloading, lyricsDownloading, thumbnailDownloading]);
+
+  const handleDownload = async () => {
+    if (!song?.id) {
+      setError("No song available to download.");
+      return;
+    }
+
+    setError(null);
+
+    try {
+      if (typeof window !== "undefined" && navigator.storage?.persist) {
+        await navigator.storage.persist();
+      }
+
+      const cache = await caches.open("offline-media-vault");
+
+      if (!offlineAssets.isOffline) {
+        setVideoDownloading(true);
+        await downloadVideoAsset(cache, song.id);
+        setVideoDownloading(false);
+      }
+
+      if (!offlineAssets.thumbnailUrl) {
+        setThumbnailDownloading(true);
+        await downloadThumbnailAsset(cache, song.id, song.thumbnailUrl);
+        setThumbnailDownloading(false);
+      }
+
+      if (!offlineAssets.lyrics || offlineAssets.lyrics.length === 0) {
+        setLyricsDownloading(true);
+        await downloadLyricsAsset(cache, song.id, song.artistName || "", song.title || "");
+        setLyricsDownloading(false);
+      }
+
+      console.log("Track, artwork, and syncing lyrics saved offline successfully!");
+    } catch (err) {
+      console.error("Storage error:", err);
+      setError(err instanceof Error ? err.message : "An error occurred.");
+    } finally {
+      setVideoDownloading(false);
+      setLyricsDownloading(false);
+      setThumbnailDownloading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -79,7 +151,7 @@ function WatchPageContent() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center bg-background">
         <AlertCircle className="h-10 w-10 text-destructive mb-3" />
-        <h2 className="text-lg font-semibold tracking-tight">Failed to load track</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Error!</h2>
         <p className="text-sm text-muted-foreground mb-4">{error}</p>
 
         <Link
@@ -96,11 +168,53 @@ function WatchPageContent() {
     <div className="flex flex-col lg:flex-row w-full h-full items-stretch">
       <div className="w-full lg:w-2/3 space-y-3 p-4">
         <div className="relative aspect-video w-full bg-black rounded-lg overflow-hidden">
-          <Image src={song.thumbnailUrl} alt={song.title} fill className="object-cover" />
+          {offlineAssets.isOffline
+            ? (
+              <>
+                <Image src={thumbnailUrl} alt={song.title} width={200} height={200} className="object-cover" />
+                <audio
+                  src={offlineAssets.videoUrl}
+                  controls
+                  className="w-full"
+                  preload="auto"
+                />
+              </>
+            ) : (
+              <>
+                <Image src={thumbnailUrl} alt={song.title} fill className="object-cover" />
+
+                {videoDownloading ? (
+                  <div className="absolute inset-0 transition-opacity bg-black/30 backdrop-blur-sm flex flex-col items-center justify-center">
+                    <div className="rounded-full p-2 bg-muted">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity bg-black/30 flex flex-col items-center justify-center cursor-pointer"
+                    onClick={() => handleDownload()}
+                  >
+                    <div className="rounded-full p-2 bg-muted text-foreground">
+                      <ArrowDownToLine className="h-8 w-8" />
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
         </div>
-        <div className="px-1">
-          <h2 className="text-xl font-semibold tracking-tight">{song.title}</h2>
-          <p className="text-sm text-muted-foreground">{song.artistName}</p>
+
+        <div className="px-1 flex justify-between items-start">
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight">{song.title}</h2>
+            <p className="text-sm text-muted-foreground">{song.artistName}</p>
+          </div>
+
+          {offlineAssets.fileSize && (
+            <div className="flex items-center gap-1.5 bg-green-500/10 dark:bg-green-500/20 text-green-600 dark:text-green-400 text-xs font-medium px-2.5 py-1 rounded-full border border-green-500/20">
+              <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+              <span>Offline ({offlineAssets.fileSize})</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -108,6 +222,13 @@ function WatchPageContent() {
       <Separator orientation="horizontal" className="block lg:hidden my-2" />
 
       <div className="w-full lg:w-1/3 flex flex-col overflow-auto p-4">
+        <OfflineStatus
+          offlineAssets={offlineAssets}
+          videoDownloading={videoDownloading}
+          lyricsDownloading={lyricsDownloading}
+          thumbnailDownloading={thumbnailDownloading}
+          onDownloadClick={() => handleDownload()}
+        />
       </div>
     </div>
   )
