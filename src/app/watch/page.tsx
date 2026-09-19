@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { getSongDetails, SongData } from "../api/actions";
-import { useEffect, useState, Suspense, useRef } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Loader2, AlertCircle, ArrowDownToLine } from "lucide-react";
@@ -15,8 +15,8 @@ import { downloadLyricsAsset, downloadThumbnailAsset, downloadVideoAsset, getOff
 import { OfflineStatus } from "./_components/offline-status";
 import { PlayPauseOverlay } from "./_components/play-pause-overlay";
 import { useDownloadedSongs } from "@/hooks/use-downloaded-songs";
-import { SongItem } from "@/components/song-item";
-import { SongPlaylist } from "@/components/song-playlist";
+import { SongControls } from "@/components/song-controls";
+import { useAudio } from "@/context/audio-context";
 
 function WatchPageContent() {
   const searchParams = useSearchParams();
@@ -39,10 +39,20 @@ function WatchPageContent() {
   });
   const thumbnailUrl = offlineAssets.thumbnailUrl ?? song?.thumbnailUrl ?? '';
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  const [isPaused, setIsPaused] = useState(true);
+  const { state: globalAudioState, togglePlay, playTrack } = useAudio();
+  const isPaused = !globalAudioState.isPlaying;
   const [triggerCount, setTriggerCount] = useState(0);
+
+  const handlePlayPause = () => {
+    console.log("Play/Pause triggered. Current track:", globalAudioState.currentTrack, "Song ID:", song?.id);
+
+    if (song && globalAudioState.currentTrack !== song.id) {
+      playTrack(offlineAssets.videoUrl, song.id);
+    } else {
+      togglePlay();
+      setTriggerCount(prev => prev + 1);
+    }
+  }
 
   const { addDownloadedSong, removeDownloadedSong, isSongDownloaded } = useDownloadedSongs();
 
@@ -106,6 +116,8 @@ function WatchPageContent() {
         return;
       }
 
+      console.log(`Key pressed: ${event.code}`);
+
       if (event.code === 'Space') {
         event.preventDefault();
         handlePlayPause();
@@ -117,7 +129,7 @@ function WatchPageContent() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [handlePlayPause]);
 
   const handleDownload = async () => {
     if (!song?.id) {
@@ -163,44 +175,23 @@ function WatchPageContent() {
     }
   };
 
-  const handlePlayPause = () => {
-    if (!audioRef.current) return;
-
-    if (audioRef.current.paused) {
-      audioRef.current.play();
-      setIsPaused(false);
-    } else {
-      audioRef.current.pause();
-      setIsPaused(true);
-    }
-
-    setTriggerCount(prev => prev + 1);
-  }
-
   if (loading) {
     return (
-      <div className="flex w-full h-full items-stretch">
-        <div className="w-80 hidden md:block">
+      <div className="flex flex-col lg:flex-row w-full min-h-screen mx-auto items-stretch lg:max-h-screen">
+        <div className="w-full lg:w-2/3 space-y-3 p-4">
+          <div className="relative aspect-video w-full bg-black rounded-lg overflow-hidden">
+            <Skeleton className="absolute inset-0 w-full h-full" />
+          </div>
+          <div className="px-1">
+            <Skeleton className="h-6 w-1/4" />
+            <Skeleton className="h-4 w-1/4 mt-2" />
+          </div>
         </div>
 
-        <Separator orientation="vertical" className="hidden md:block h-auto min-h-full" />
+        <Separator orientation="vertical" className="hidden lg:block h-auto min-h-full" />
+        <Separator orientation="horizontal" className="block lg:hidden my-2" />
 
-        <div className="flex flex-col lg:flex-row w-full min-h-screen mx-auto items-stretch lg:max-h-screen">
-          <div className="w-full lg:w-2/3 space-y-3 p-4">
-            <div className="relative aspect-video w-full bg-black rounded-lg overflow-hidden">
-              <Skeleton className="absolute inset-0 w-full h-full" />
-            </div>
-            <div className="px-1">
-              <Skeleton className="h-6 w-1/4" />
-              <Skeleton className="h-4 w-1/4 mt-2" />
-            </div>
-          </div>
-
-          <Separator orientation="vertical" className="hidden lg:block h-auto min-h-full" />
-          <Separator orientation="horizontal" className="block lg:hidden my-2" />
-
-          <div className="w-full lg:w-1/3 flex flex-col overflow-auto p-4">
-          </div>
+        <div className="w-full lg:w-1/3 flex flex-col overflow-auto p-4">
         </div>
       </div>
     );
@@ -236,12 +227,10 @@ function WatchPageContent() {
                   onClick={() => handlePlayPause()}
                 />
                 <PlayPauseOverlay isPaused={isPaused} triggerCount={triggerCount} />
-                <audio
-                  ref={audioRef}
+                <SongControls
                   src={offlineAssets.videoUrl}
-                  controls
+                  songId={song.id}
                   className="w-full absolute bottom-0"
-                  preload="auto"
                 />
               </>
             ) : (

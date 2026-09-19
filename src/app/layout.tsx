@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { SearchProvider } from "@/components/search/search-context";
 import { LayoutWrapper } from "@/components/layout-wrapper";
+import { AudioProvider } from "@/context/audio-context";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -38,9 +39,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           disableTransitionOnChange
         >
           <SearchProvider>
-            <LayoutWrapper>
-              {children}
-            </LayoutWrapper>
+            <AudioProvider>
+              <LayoutWrapper>
+                {children}
+              </LayoutWrapper>
+            </AudioProvider>
           </SearchProvider>
         </ThemeProvider>
       </body>
