@@ -189,52 +189,66 @@ function WatchPageContent() {
   return (
     <div className="flex flex-col w-full h-full items-stretch">
       <div className="flex flex-col lg:flex-row w-full h-full items-stretch">
-        <div className="w-full lg:w-2/3 space-y-3 p-4">
-          <div className="relative aspect-square md:aspect-video w-full bg-black rounded-lg overflow-hidden">
-            {offlineAssets.isOffline
-              ? (
-                <>
-                  <Image
-                    src={thumbnailUrl} alt={song.title} fill
-                    className="object-cover"
-                    onClick={() => handlePlayPause()}
-                  />
-                  <PlayPauseOverlay isPaused={isPaused} triggerCount={triggerCount} />
-                  <SongControls
-                    src={offlineAssets.videoUrl}
-                    song={song}
-                    className="w-full absolute bottom-0"
-                  />
-                </>
-              ) : (
-                <>
-                  <Image src={thumbnailUrl} alt={song.title} fill className="object-cover" />
+        <div className="w-full lg:w-2/3 space-y-4 pt-4">
+          <div className="px-4 space-y-3">
+            <div className="relative aspect-square md:aspect-video w-full bg-black rounded-lg overflow-hidden">
+              {offlineAssets.isOffline
+                ? (
+                  <>
+                    <Image
+                      src={thumbnailUrl} alt={song.title} fill
+                      className="object-cover"
+                      onClick={() => handlePlayPause()}
+                    />
+                    <PlayPauseOverlay isPaused={isPaused} triggerCount={triggerCount} />
+                    <SongControls
+                      src={offlineAssets.videoUrl}
+                      song={song}
+                      className="w-full absolute bottom-0"
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Image src={thumbnailUrl} alt={song.title} fill className="object-cover" />
 
-                  {videoDownloading ? (
-                    <div className="absolute inset-0 transition-opacity bg-black/30 backdrop-blur-sm flex flex-col items-center justify-center">
-                      <div className="rounded-full p-2 bg-muted">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    {videoDownloading ? (
+                      <div className="absolute inset-0 transition-opacity bg-black/30 backdrop-blur-sm flex flex-col items-center justify-center">
+                        <div className="rounded-full p-2 bg-muted">
+                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div
-                      className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity bg-black/30 flex flex-col items-center justify-center cursor-pointer"
-                      onClick={() => handleDownload()}
-                    >
-                      <div className="rounded-full p-2 bg-muted text-foreground">
-                        <ArrowDownToLine className="h-8 w-8" />
+                    ) : (
+                      <div
+                        className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity bg-black/30 flex flex-col items-center justify-center cursor-pointer"
+                        onClick={() => handleDownload()}
+                      >
+                        <div className="rounded-full p-2 bg-muted text-foreground">
+                          <ArrowDownToLine className="h-8 w-8" />
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </>
-              )}
+                    )}
+                  </>
+                )}
+            </div>
+
+            <div className="px-1 flex justify-between items-start">
+              <div>
+                <h2 className="text-xl font-semibold tracking-tight">{song.title}</h2>
+                <p className="text-sm text-muted-foreground">{song.artistName}</p>
+              </div>
+            </div>
           </div>
 
-          <div className="px-1 flex justify-between items-start">
-            <div>
-              <h2 className="text-xl font-semibold tracking-tight">{song.title}</h2>
-              <p className="text-sm text-muted-foreground">{song.artistName}</p>
-            </div>
+          <Separator />
+
+          <div className="px-4">
+            <OfflineStatus
+              offlineAssets={offlineAssets}
+              videoDownloading={videoDownloading}
+              lyricsDownloading={lyricsDownloading}
+              thumbnailDownloading={thumbnailDownloading}
+              onDownloadClick={() => handleDownload()}
+            />
           </div>
         </div>
 
@@ -242,13 +256,6 @@ function WatchPageContent() {
         <Separator orientation="horizontal" className="block lg:hidden my-2" />
 
         <div className="w-full lg:w-1/3 flex flex-col overflow-auto p-4">
-          <OfflineStatus
-            offlineAssets={offlineAssets}
-            videoDownloading={videoDownloading}
-            lyricsDownloading={lyricsDownloading}
-            thumbnailDownloading={thumbnailDownloading}
-            onDownloadClick={() => handleDownload()}
-          />
         </div>
       </div>
 

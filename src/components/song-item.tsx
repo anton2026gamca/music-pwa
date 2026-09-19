@@ -75,8 +75,6 @@ export function SongItem({ song, progress = null }: SongItemProps) {
     </Item>
   )
 
-  console.log(progress);
-
   return (
     <Item className="h-16 p-0 pr-3 border border-b-border rounded-none overflow-hidden group hover:bg-card hover:cursor-pointer relative"
       style={{

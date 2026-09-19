@@ -60,11 +60,11 @@ export function OfflineStatus({ offlineAssets, videoDownloading, lyricsDownloadi
 
       <Separator />
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap justify-around gap-x-4 gap-y-1">
         {indicators.map((item) => {
           const Icon = item.icon;
           return (
-            <div className="flex justify-between items-center text-sm" key={item.id}>
+            <div className="w-60 text-nowrap flex justify-between gap-3 items-center text-sm" key={item.id}>
               <span>{item.label}</span>
               <Badge
                 variant={item.status ? "secondary" : "outline"}
@@ -97,13 +97,17 @@ export function OfflineStatus({ offlineAssets, videoDownloading, lyricsDownloadi
             </div>
           );
         })}
+
+        {(!hasVideo || !hasLyrics || !hasThumbnail) && (!videoDownloading && !lyricsDownloading && !thumbnailDownloading)
+          ? (
+            <Button className="w-60" onClick={onDownloadClick}>
+              Download All
+            </Button>
+          ) : (
+            <div className="w-60"></div>
+          )}
       </div>
 
-      {(!hasVideo || !hasLyrics || !hasThumbnail) && (!videoDownloading && !lyricsDownloading && !thumbnailDownloading) && (
-        <Button className="" onClick={onDownloadClick}>
-          Download All
-        </Button>
-      )}
     </div>
   );
 }
