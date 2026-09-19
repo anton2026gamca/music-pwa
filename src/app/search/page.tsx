@@ -9,6 +9,8 @@ import dynamic from 'next/dynamic';
 
 // shadcn/ui (Base UI engine) variants 
 import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from '@/components/ui/separator';
+import { CurrentlyPlaying } from '@/components/currently-playing';
 
 const SearchBar = dynamic(() => import('@/components/search/search-bar'), { ssr: false });
 
@@ -56,60 +58,65 @@ function SearchPageContent() {
   };
 
   return (
-    <main className="min-h-screen bg-background text-foreground py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto space-y-10">
-        <header className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center p-3 bg-muted text-muted-foreground rounded-full">
-            <Music4 className="h-6 w-6" />
-          </div>
-          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl">Search Results</h1>
-        </header>
+    <div className="h-full max-h-full bg-background text-foreground flex flex-col relative">
+      <div className="flex-1 py-12 px-4 sm:px-6 lg:px-8 overflow-auto">
+        <div className="max-w-4xl mx-auto space-y-10">
+          <header className="text-center space-y-2">
+            <div className="inline-flex items-center justify-center p-3 bg-muted text-muted-foreground rounded-full">
+              <Music4 className="h-6 w-6" />
+            </div>
+            <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl">Search Results</h1>
+          </header>
 
-        <SearchBar onSearch={handleSearchSubmit} loading={loading} />
+          <SearchBar onSearch={handleSearchSubmit} loading={loading} />
 
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-2">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm font-medium text-muted-foreground">Searching...</p>
-          </div>
-        ) : (
-          songs.length > 0 ? (
-            <div className="flex flex-col gap-2">
-              {songs.map((song) => {
-                const handleSelectSong = () => {
-                  sessionStorage.setItem(`song_${song.id}`, JSON.stringify(song));
-                  router.push(`/watch?id=${song.id}&from=${encodeURIComponent(targetQuery)}`);
-                };
-
-                return (
-                  <button
-                    key={song.id}
-                    onClick={handleSelectSong}
-                    className="w-full text-left transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
-                  >
-                    <SongItem song={song} />
-                  </button>
-                );
-              })}
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-2">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm font-medium text-muted-foreground">Searching...</p>
             </div>
           ) : (
-            hasSearched && (
-              <Card className="max-w-sm mx-auto border-dashed shadow-none">
-                <CardContent className="flex flex-col items-center justify-center py-12 text-center space-y-3">
-                  <div className="p-3 bg-muted rounded-full text-muted-foreground">
-                    <SearchX className="h-6 w-6" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="font-semibold text-sm tracking-tight">No search results</p>
-                    <p className="text-xs text-muted-foreground">Try searching for something else</p>
-                  </div>
-                </CardContent>
-              </Card>
+            songs.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {songs.map((song) => {
+                  const handleSelectSong = () => {
+                    sessionStorage.setItem(`song_${song.id}`, JSON.stringify(song));
+                    router.push(`/watch?id=${song.id}&from=${encodeURIComponent(targetQuery)}`);
+                  };
+
+                  return (
+                    <button
+                      key={song.id}
+                      onClick={handleSelectSong}
+                      className="w-full text-left transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
+                    >
+                      <SongItem song={song} />
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              hasSearched && (
+                <Card className="max-w-sm mx-auto border-dashed shadow-none">
+                  <CardContent className="flex flex-col items-center justify-center py-12 text-center space-y-3">
+                    <div className="p-3 bg-muted rounded-full text-muted-foreground">
+                      <SearchX className="h-6 w-6" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-semibold text-sm tracking-tight">No search results</p>
+                      <p className="text-xs text-muted-foreground">Try searching for something else</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
             )
-          )
-        )}
+          )}
+        </div>
       </div>
-    </main>
+
+      <Separator orientation="horizontal" />
+      <CurrentlyPlaying />
+    </div>
   );
 }
 

@@ -12,9 +12,10 @@ import { Skeleton } from './ui/skeleton';
 
 interface SongItemProps {
   song: SongData;
+  progress?: number | null;
 }
 
-export function SongItem({ song }: SongItemProps) {
+export function SongItem({ song, progress = null }: SongItemProps) {
   const [mounted, setMounted] = useState(false);
 
   const [offlineAssets, setOfflineAssets] = useState<OfflineAssets | null>(null);
@@ -50,9 +51,9 @@ export function SongItem({ song }: SongItemProps) {
   }, [song?.id]);
 
   if (!mounted) return (
-    <Item className="h-17.5 border border-b-border rounded-none overflow-hidden group hover:bg-card hover:cursor-pointer relative">
-      <ItemMedia className="h-full pb-1">
-        <div className="h-full aspect-square">
+    <Item className="h-16 p-0 pr-3 border border-b-border rounded-none overflow-hidden group hover:bg-card hover:cursor-pointer relative">
+      <ItemMedia className="h-full translate-0! p-1.5">
+        <div className="aspect-square relative h-full">
           <Skeleton />
         </div>
       </ItemMedia>
@@ -74,10 +75,16 @@ export function SongItem({ song }: SongItemProps) {
     </Item>
   )
 
+  console.log(progress);
+
   return (
-    <Item className="h-17.5 border border-b-border rounded-none overflow-hidden group hover:bg-card hover:cursor-pointer relative">
-      <ItemMedia className="h-full translate-0!">
-        <div className="h-full aspect-square">
+    <Item className="h-16 p-0 pr-3 border border-b-border rounded-none overflow-hidden group hover:bg-card hover:cursor-pointer relative"
+      style={{
+        background: progress !== null ? `linear-gradient(to right, var(--border) ${progress}%, var(--background) ${progress}%)` : undefined,
+      }}
+    >
+      <ItemMedia className="h-full translate-0! p-1.5">
+        <div className="aspect-square relative h-full">
           <Image
             src={thumbnailUrl}
             alt={title}

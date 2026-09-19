@@ -1,5 +1,6 @@
 'use client';
 
+import { SongData } from '@/app/api/actions';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { useAudio, AudioState } from '@/context/audio-context';
@@ -7,17 +8,19 @@ import { formatDuration } from '@/lib/utils';
 import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-interface FirefoxAudioSkinProps {
+interface SongControlsProps {
   src?: string | null;
-  songId?: string | null;
+  song?: SongData | null;
   className?: string;
 }
 
-export function SongControls({ src = null, songId = null, className = '' }: FirefoxAudioSkinProps) {
+export function SongControls({ src = null, song = null, className = '' }: SongControlsProps) {
   const { state, loadTrack, playTrack, togglePlay, seek, setVolume, subscribe } = useAudio();
 
   const [localTime, setLocalTime] = useState(0);
   const isUserScrubbing = useRef(false);
+
+  const songId = song?.id || null;
 
   const currentTrack = state.currentTrack;
   const isCurrent = src && songId ? currentTrack === songId : !!currentTrack;
@@ -83,7 +86,7 @@ export function SongControls({ src = null, songId = null, className = '' }: Fire
       <div className="flex items-center gap-1 text-[13px] text-[#f9f9fb] font-normal tracking-wide shrink-0">
         <span className="min-w-7 text-right">{isCurrent ? formatDuration(localTime) : '0:00'}</span>
         <span className="text-[#a4a4a4]">/</span>
-        <span className="min-w-7">{isCurrent ? formatDuration(state.duration) : '0:00'}</span>
+        <span className="min-w-7">{isCurrent ? formatDuration(state.duration) : formatDuration(song?.duration)}</span>
       </div>
 
       <Slider
