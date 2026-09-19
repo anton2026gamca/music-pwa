@@ -29,7 +29,7 @@ export function SongItem({ song, progress = null }: SongItemProps) {
   useEffect(() => {
     if (!song?.id) return;
 
-    let activeVideoSrc: string | null = null;
+    let activeSongSrc: string | null = null;
     let activeThumbSrc: string | null = null;
 
     const loadMediaContext = async () => {
@@ -37,7 +37,7 @@ export function SongItem({ song, progress = null }: SongItemProps) {
 
       setOfflineAssets(assets);
 
-      activeVideoSrc = assets.videoUrl;
+      activeSongSrc = assets.songUrl;
       activeThumbSrc = assets.thumbnailUrl;
 
       setMounted(true);
@@ -46,7 +46,7 @@ export function SongItem({ song, progress = null }: SongItemProps) {
     loadMediaContext();
 
     return () => {
-      revokeBlobUrls(activeVideoSrc, activeThumbSrc);
+      revokeBlobUrls(activeSongSrc, activeThumbSrc);
     };
   }, [song?.id]);
 

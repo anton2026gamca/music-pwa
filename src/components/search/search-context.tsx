@@ -5,23 +5,23 @@ import { SongData } from '@/app/api/actions';
 
 interface SearchContextType {
   cachedQuery: string;
-  cachedVideos: SongData[];
-  setCache: (query: string, videos: SongData[]) => void;
+  cachedSongs: SongData[];
+  setCache: (query: string, songs: SongData[]) => void;
 }
 
 const SearchContext = createContext<SearchContextType | undefined>(undefined);
 
 export function SearchProvider({ children }: { children: ReactNode }) {
   const [cachedQuery, setCachedQuery] = useState('');
-  const [cachedVideos, setCachedVideos] = useState<SongData[]>([]);
+  const [cachedSongs, setCachedSongs] = useState<SongData[]>([]);
 
-  const setCache = (query: string, videos: SongData[]) => {
+  const setCache = (query: string, songs: SongData[]) => {
     setCachedQuery(query);
-    setCachedVideos(videos);
+    setCachedSongs(songs);
   };
 
   return (
-    <SearchContext.Provider value={{ cachedQuery, cachedVideos, setCache }}>
+    <SearchContext.Provider value={{ cachedQuery, cachedSongs, setCache }}>
       {children}
     </SearchContext.Provider>
   );

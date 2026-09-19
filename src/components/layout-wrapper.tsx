@@ -22,7 +22,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const { downloadedSongs } = useDownloadedSongs();
+  const { songs: downloadedSongs } = useDownloadedSongs();
 
   return (
     <div className="bg-background text-foreground h-screen flex flex-col relative overflow-hidden">

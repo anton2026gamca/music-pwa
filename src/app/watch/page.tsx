@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Loader2, AlertCircle, ArrowDownToLine } from "lucide-react";
+import { Loader2, AlertCircle, Play } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { buttonVariants } from "@/components/ui/button";
@@ -13,11 +13,12 @@ import { Separator } from "@/components/ui/separator";
 import { downloadLyricsAsset, downloadThumbnailAsset, downloadVideoAsset, getOfflineAssets, OfflineAssets, revokeBlobUrls } from "./_lib/download-utils";
 import { OfflineStatus } from "./_components/offline-status";
 import { PlayPauseOverlay } from "./_components/play-pause-overlay";
-import { useDownloadedSongs } from "@/hooks/use-downloaded-songs";
 import { SongControls } from "@/components/song-controls";
 import { useAudio } from "@/context/audio-context";
 import { useFetchSongData } from "@/hooks/use-fetch-song-data";
 import { CurrentlyPlaying } from "@/components/currently-playing";
+import { useCachedSongs } from "@/hooks/use-cached-songs";
+import { useDownloadedSongs } from "@/hooks/use-downloaded-songs";
 
 function WatchPageContent() {
   const searchParams = useSearchParams();
@@ -32,7 +33,7 @@ function WatchPageContent() {
 
   const [offlineAssets, setOfflineAssets] = useState<OfflineAssets>({
     isOffline: false,
-    videoUrl: '',
+    songUrl: '',
     fileSize: null,
     thumbnailUrl: null,
     lyrics: null,
@@ -45,41 +46,52 @@ function WatchPageContent() {
 
   const handlePlayPause = () => {
     if (song && globalAudioState.currentTrack !== song.id) {
-      playTrack(offlineAssets.videoUrl, song.id);
+      playTrack(offlineAssets.songUrl, song.id);
     } else {
       togglePlay();
       setTriggerCount(prev => prev + 1);
     }
   }
 
-  const { addDownloadedSong, removeDownloadedSong, isSongDownloaded } = useDownloadedSongs();
+  const {
+    songs: downloadedSongs,
+    addSong: addDownloadedSong,
+    removeSong: removeDownloadedSong,
+    includesSong: isSongDownloaded
+  } = useDownloadedSongs();
+  const {
+    songs: cachedSongs,
+    addSong: addCachedSong,
+    removeSong: removeCachedSong,
+    includesSong: isSongCached
+  } = useCachedSongs();
 
   useEffect(() => {
     if (!song?.id) return;
 
-    let activeVideoSrc: string | null = null;
-    let activeThumbSrc: string | null = null;
+    let activeSongUrl: string | null = null;
+    let activeThumbUrl: string | null = null;
 
     const loadMediaContext = async () => {
       const assets = await getOfflineAssets(song.id);
 
       setOfflineAssets(assets);
 
-      activeVideoSrc = assets.videoUrl;
-      activeThumbSrc = assets.thumbnailUrl;
+      activeSongUrl = assets.songUrl;
+      activeThumbUrl = assets.thumbnailUrl;
 
-      console.log("Offline assets loaded:", assets);
-      if (assets.isOffline && !isSongDownloaded(song.id)) {
-        addDownloadedSong(song);
-      } else if (!assets.isOffline && isSongDownloaded(song.id)) {
+      if (!assets.isOffline && (isSongDownloaded(song.id) || isSongCached(song.id))) {
         removeDownloadedSong(song.id);
+        removeCachedSong(song.id);
       }
+
+      console.log(cachedSongs, downloadedSongs);
     };
 
     loadMediaContext();
 
     return () => {
-      revokeBlobUrls(activeVideoSrc, activeThumbSrc);
+      revokeBlobUrls(activeSongUrl, activeThumbUrl);
     };
   }, [song?.id, videoDownloading, lyricsDownloading, thumbnailDownloading]);
 
@@ -103,7 +115,7 @@ function WatchPageContent() {
     };
   }, [handlePlayPause]);
 
-  const handleDownload = async () => {
+  const handleDownload = async (cacheOnly: boolean = false) => {
     if (!song?.id) {
       setError("No song available to download.");
       return;
@@ -122,6 +134,14 @@ function WatchPageContent() {
         setVideoDownloading(true);
         await downloadVideoAsset(cache, song.id);
         setVideoDownloading(false);
+      }
+
+      if (cacheOnly) {
+        addCachedSong(song);
+        removeDownloadedSong(song.id);
+      } else {
+        addDownloadedSong(song);
+        removeCachedSong(song.id);
       }
 
       if (!offlineAssets.thumbnailUrl) {
@@ -202,7 +222,7 @@ function WatchPageContent() {
                     />
                     <PlayPauseOverlay isPaused={isPaused} triggerCount={triggerCount} />
                     <SongControls
-                      src={offlineAssets.videoUrl}
+                      src={offlineAssets.songUrl}
                       song={song}
                       className="w-full absolute bottom-0"
                     />
@@ -220,10 +240,13 @@ function WatchPageContent() {
                     ) : (
                       <div
                         className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity bg-black/30 flex flex-col items-center justify-center cursor-pointer"
-                        onClick={() => handleDownload()}
+                        onClick={async () => {
+                          await handleDownload(true)
+                          handlePlayPause();
+                        }}
                       >
                         <div className="rounded-full p-2 bg-muted text-foreground">
-                          <ArrowDownToLine className="h-8 w-8" />
+                          <Play className="h-8 w-8 fill-current stroke-none" />
                         </div>
                       </div>
                     )}
@@ -248,6 +271,8 @@ function WatchPageContent() {
               lyricsDownloading={lyricsDownloading}
               thumbnailDownloading={thumbnailDownloading}
               onDownloadClick={() => handleDownload()}
+              showMoveToDownloads={isSongCached(song.id)}
+              onMoveToDownloadsClick={() => handleDownload()}
             />
           </div>
         </div>

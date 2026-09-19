@@ -12,9 +12,11 @@ interface OfflineStatusProps {
   lyricsDownloading: boolean;
   thumbnailDownloading: boolean;
   onDownloadClick?: () => void;
+  showMoveToDownloads?: boolean;
+  onMoveToDownloadsClick?: () => void;
 }
 
-export function OfflineStatus({ offlineAssets, videoDownloading, lyricsDownloading, thumbnailDownloading, onDownloadClick }: OfflineStatusProps) {
+export function OfflineStatus({ offlineAssets, videoDownloading, lyricsDownloading, thumbnailDownloading, onDownloadClick, showMoveToDownloads, onMoveToDownloadsClick }: OfflineStatusProps) {
   const hasVideo = offlineAssets.isOffline;
   const hasLyrics = offlineAssets.lyrics !== null && offlineAssets.lyrics.length > 0;
   const hasThumbnail = offlineAssets.thumbnailUrl !== null;
@@ -50,12 +52,29 @@ export function OfflineStatus({ offlineAssets, videoDownloading, lyricsDownloadi
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold uppercase">
-          Offline Data
-        </span>
-        <span className="text-xs font-medium text-muted-foreground">
-          {fileSize || 'N/A'}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold uppercase">
+            Offline Data
+          </span>
+          {fileSize && (
+            <span className="text-xs font-medium text-muted-foreground">
+              ({fileSize})
+            </span>
+          )}
+        </div>
+        {(!hasVideo || !hasLyrics || !hasThumbnail) && (!videoDownloading && !lyricsDownloading && !thumbnailDownloading) && (
+          <Button className="w-32" onClick={onDownloadClick}>
+            Download All
+          </Button>
+        )}
+        {hasVideo && showMoveToDownloads && onMoveToDownloadsClick && (
+          <Button className="w-32" onClick={onMoveToDownloadsClick}>
+            Move to Downloads
+          </Button>
+        )}
+        {hasVideo && !showMoveToDownloads && !videoDownloading && (
+          <Badge className="text-xs font-medium">In downloaded songs</Badge>
+        )}
       </div>
 
       <Separator />
@@ -64,7 +83,7 @@ export function OfflineStatus({ offlineAssets, videoDownloading, lyricsDownloadi
         {indicators.map((item) => {
           const Icon = item.icon;
           return (
-            <div className="w-60 text-nowrap flex justify-between gap-3 items-center text-sm" key={item.id}>
+            <div className="w-64 text-nowrap flex justify-between gap-3 items-center text-sm" key={item.id}>
               <span>{item.label}</span>
               <Badge
                 variant={item.status ? "secondary" : "outline"}
@@ -98,14 +117,7 @@ export function OfflineStatus({ offlineAssets, videoDownloading, lyricsDownloadi
           );
         })}
 
-        {(!hasVideo || !hasLyrics || !hasThumbnail) && (!videoDownloading && !lyricsDownloading && !thumbnailDownloading)
-          ? (
-            <Button className="w-60" onClick={onDownloadClick}>
-              Download All
-            </Button>
-          ) : (
-            <div className="w-60"></div>
-          )}
+        <div className="w-64"></div>
       </div>
 
     </div>

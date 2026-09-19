@@ -1,6 +1,6 @@
 'use server';
 
-import YTMusic from 'ytmusic-api';
+import { getYTMusic } from '@/lib/ytmusic';
 import type { SongDetailed } from 'ytmusic-api';
 
 export interface SongData {
@@ -12,8 +12,7 @@ export interface SongData {
 }
 
 export async function searchSongs(query: string): Promise<SongData[]> {
-  const ytmusic = new YTMusic();
-  await ytmusic.initialize();
+  const ytmusic = await getYTMusic();
 
   const songResults: SongDetailed[] = await ytmusic.searchSongs(query);
 
@@ -32,12 +31,11 @@ export async function searchSongs(query: string): Promise<SongData[]> {
   });
 }
 
-export async function getSongDetails(videoId: string): Promise<SongData | null> {
+export async function getSongDetails(songId: string): Promise<SongData | null> {
   try {
-    const ytmusic = new YTMusic();
-    await ytmusic.initialize();
+    const ytmusic = await getYTMusic();
 
-    const song = await ytmusic.getSong(videoId);
+    const song = await ytmusic.getSong(songId);
 
     if (!song) return null;
 

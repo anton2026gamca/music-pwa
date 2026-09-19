@@ -1,8 +1,9 @@
 import { SongData } from "@/app/api/actions";
 import { SongItem } from "./song-item";
-import { useDownloadedSongs } from "@/hooks/use-downloaded-songs";
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { useCachedSongs } from "@/hooks/use-cached-songs";
+import { useDownloadedSongs } from "@/hooks/use-downloaded-songs";
 
 
 interface SongPlaylistProps {
@@ -11,7 +12,8 @@ interface SongPlaylistProps {
 }
 
 export function SongPlaylist({ title, songs }: SongPlaylistProps) {
-  const { getDownloadedSong } = useDownloadedSongs();
+  const { getSongData: getDownloadedSongData } = useDownloadedSongs();
+  const { getSongData: getCachedSongData } = useCachedSongs();
   const [isOpen, setIsOpen] = useState(true);
 
   return (
@@ -33,7 +35,7 @@ export function SongPlaylist({ title, songs }: SongPlaylistProps) {
       {isOpen && (
         <div>
           {songs.map((raw) => {
-            const song = typeof raw === 'string' ? getDownloadedSong(raw) : raw;
+            const song = typeof raw === 'string' ? (getDownloadedSongData(raw) ?? getCachedSongData(raw)) : raw;
             if (!song) return null;
 
             return (

@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme/theme-provider";
 import { SearchProvider } from "@/components/search/search-context";
 import { LayoutWrapper } from "@/components/layout-wrapper";
 import { AudioProvider } from "@/context/audio-context";
+import { SongsListProvider } from "@/context/songs-list-context";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -40,9 +41,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           <SearchProvider>
             <AudioProvider>
-              <LayoutWrapper>
-                {children}
-              </LayoutWrapper>
+              <SongsListProvider>
+                <LayoutWrapper>
+                  {children}
+                </LayoutWrapper>
+              </SongsListProvider>
             </AudioProvider>
           </SearchProvider>
         </ThemeProvider>

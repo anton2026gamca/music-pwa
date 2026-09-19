@@ -1,7 +1,7 @@
 export interface OfflineAssets {
   isOffline: boolean;
   fileSize: string | null;
-  videoUrl: string;
+  songUrl: string;
   thumbnailUrl: string | null;
   lyrics: Array<{ time: number; text: string }> | null;
 }
@@ -28,7 +28,7 @@ export async function getOfflineAssets(
 
       const fileSize = `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 
-      const videoUrl = URL.createObjectURL(mediaBlob);
+      const songUrl = URL.createObjectURL(mediaBlob);
 
       let thumbnailUrl: string | null = null;
       const cachedImg = await cache.match(`/api/offline/thumbnail?id=${songId}`);
@@ -48,7 +48,7 @@ export async function getOfflineAssets(
 
       return {
         isOffline: true,
-        videoUrl,
+        songUrl: songUrl,
         fileSize,
         thumbnailUrl,
         lyrics,
@@ -60,7 +60,7 @@ export async function getOfflineAssets(
 
   return {
     isOffline: false,
-    videoUrl: downloadUrl,
+    songUrl: downloadUrl,
     fileSize: null,
     thumbnailUrl: null,
     lyrics: [],

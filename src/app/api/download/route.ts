@@ -3,16 +3,16 @@ import { Innertube } from 'youtubei.js';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const videoId = searchParams.get('id') || searchParams.get('videoId');
+  const songId = searchParams.get('id') || searchParams.get('songId');
 
-  if (!videoId) {
-    return NextResponse.json({ error: 'Missing videoId parameter' }, { status: 400 });
+  if (!songId) {
+    return NextResponse.json({ error: 'Missing songId parameter' }, { status: 400 });
   }
 
   try {
     const yt = await Innertube.create();
 
-    const stream = await yt.download(videoId, {
+    const stream = await yt.download(songId, {
       type: 'video+audio',
       quality: 'best',
       client: 'ANDROID',
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     return new NextResponse(stream as unknown as BodyInit, {
       headers: {
         'Content-Type': 'video/mp4',
-        'Content-Disposition': `attachment; filename="video_${videoId}.mp4"`,
+        'Content-Disposition': `attachment; filename="video_${songId}.mp4"`,
         'Transfer-Encoding': 'chunked',
       },
     });
