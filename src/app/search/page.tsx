@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { searchSongs, SongData } from '@/app/api/actions';
 import { SongItem } from '@/components/song-item';
 import { Loader2, Music4, SearchX } from "lucide-react";
-import { ThemeToggle } from '@/components/theme/theme-toggle';
 import dynamic from 'next/dynamic';
 
 // shadcn/ui (Base UI engine) variants 
@@ -65,10 +64,6 @@ function SearchPageContent() {
           </div>
           <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl">Search Results</h1>
         </header>
-
-        <div className='absolute top-4 right-4'>
-          <ThemeToggle />
-        </div>
 
         <SearchBar onSearch={handleSearchSubmit} loading={loading} />
 

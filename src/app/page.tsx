@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 import { Music4 } from "lucide-react";
-import { ThemeToggle } from '@/components/theme/theme-toggle';
 import dynamic from 'next/dynamic';
 
 const SearchBar = dynamic(() => import('@/components/search/search-bar'), { ssr: false });
@@ -26,10 +25,6 @@ export default function Home() {
             A hobby web-app to search, find, and download music!
           </p>
         </header>
-
-        <div className='absolute top-4 right-4'>
-          <ThemeToggle />
-        </div>
 
         <SearchBar onSearch={handleInitialSearchSubmit} loading={false} />
       </div>

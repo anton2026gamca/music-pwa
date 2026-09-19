@@ -44,7 +44,7 @@ function WatchPageContent() {
   const [isPaused, setIsPaused] = useState(true);
   const [triggerCount, setTriggerCount] = useState(0);
 
-  const { downloadedSongs, addDownloadedSong, removeDownloadedSong, isSongDownloaded, getDownloadedSong } = useDownloadedSongs();
+  const { addDownloadedSong, removeDownloadedSong, isSongDownloaded } = useDownloadedSongs();
 
   useEffect(() => {
     if (!songIdParam) {
@@ -224,77 +224,69 @@ function WatchPageContent() {
   }
 
   return (
-    <div className="flex w-full h-full items-stretch">
-      <div className="w-80 hidden md:block">
-        <SongPlaylist title="Downloaded Songs" songs={downloadedSongs} />
+    <div className="flex flex-col lg:flex-row w-full h-full items-stretch">
+      <div className="w-full lg:w-2/3 space-y-3 p-4">
+        <div className="relative aspect-square md:aspect-video w-full bg-black rounded-lg overflow-hidden">
+          {offlineAssets.isOffline
+            ? (
+              <>
+                <Image
+                  src={thumbnailUrl} alt={song.title} fill
+                  className="object-cover"
+                  onClick={() => handlePlayPause()}
+                />
+                <PlayPauseOverlay isPaused={isPaused} triggerCount={triggerCount} />
+                <audio
+                  ref={audioRef}
+                  src={offlineAssets.videoUrl}
+                  controls
+                  className="w-full absolute bottom-0"
+                  preload="auto"
+                />
+              </>
+            ) : (
+              <>
+                <Image src={thumbnailUrl} alt={song.title} fill className="object-cover" />
+
+                {videoDownloading ? (
+                  <div className="absolute inset-0 transition-opacity bg-black/30 backdrop-blur-sm flex flex-col items-center justify-center">
+                    <div className="rounded-full p-2 bg-muted">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity bg-black/30 flex flex-col items-center justify-center cursor-pointer"
+                    onClick={() => handleDownload()}
+                  >
+                    <div className="rounded-full p-2 bg-muted text-foreground">
+                      <ArrowDownToLine className="h-8 w-8" />
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+        </div>
+
+        <div className="px-1 flex justify-between items-start">
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight">{song.title}</h2>
+            <p className="text-sm text-muted-foreground">{song.artistName}</p>
+          </div>
+        </div>
       </div>
 
-      <Separator orientation="vertical" className="hidden md:block h-auto min-h-full" />
+      <Separator orientation="vertical" className="hidden lg:block h-auto min-h-full" />
+      <Separator orientation="horizontal" className="block lg:hidden my-2" />
 
-      <div className="flex flex-col lg:flex-row w-full h-full items-stretch">
-        <div className="w-full lg:w-2/3 space-y-3 p-4">
-          <div className="relative aspect-square md:aspect-video w-full bg-black rounded-lg overflow-hidden">
-            {offlineAssets.isOffline
-              ? (
-                <>
-                  <Image
-                    src={thumbnailUrl} alt={song.title} fill
-                    className="object-cover"
-                    onClick={() => handlePlayPause()}
-                  />
-                  <PlayPauseOverlay isPaused={isPaused} triggerCount={triggerCount} />
-                  <audio
-                    ref={audioRef}
-                    src={offlineAssets.videoUrl}
-                    controls
-                    className="w-full absolute bottom-0"
-                    preload="auto"
-                  />
-                </>
-              ) : (
-                <>
-                  <Image src={thumbnailUrl} alt={song.title} fill className="object-cover" />
-
-                  {videoDownloading ? (
-                    <div className="absolute inset-0 transition-opacity bg-black/30 backdrop-blur-sm flex flex-col items-center justify-center">
-                      <div className="rounded-full p-2 bg-muted">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                      </div>
-                    </div>
-                  ) : (
-                    <div
-                      className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity bg-black/30 flex flex-col items-center justify-center cursor-pointer"
-                      onClick={() => handleDownload()}
-                    >
-                      <div className="rounded-full p-2 bg-muted text-foreground">
-                        <ArrowDownToLine className="h-8 w-8" />
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-          </div>
-
-          <div className="px-1 flex justify-between items-start">
-            <div>
-              <h2 className="text-xl font-semibold tracking-tight">{song.title}</h2>
-              <p className="text-sm text-muted-foreground">{song.artistName}</p>
-            </div>
-          </div>
-        </div>
-
-        <Separator orientation="vertical" className="hidden lg:block h-auto min-h-full" />
-        <Separator orientation="horizontal" className="block lg:hidden my-2" />
-
-        <div className="w-full lg:w-1/3 flex flex-col overflow-auto p-4">
-          <OfflineStatus
-            offlineAssets={offlineAssets}
-            videoDownloading={videoDownloading}
-            lyricsDownloading={lyricsDownloading}
-            thumbnailDownloading={thumbnailDownloading}
-            onDownloadClick={() => handleDownload()}
-          />
-        </div>
+      <div className="w-full lg:w-1/3 flex flex-col overflow-auto p-4">
+        <OfflineStatus
+          offlineAssets={offlineAssets}
+          videoDownloading={videoDownloading}
+          lyricsDownloading={lyricsDownloading}
+          thumbnailDownloading={thumbnailDownloading}
+          onDownloadClick={() => handleDownload()}
+        />
       </div>
     </div>
   )
