@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
         'Content-Type': 'video/mp4',
         'Content-Disposition': `attachment; filename="video_${songId}.mp4"`,
         'Transfer-Encoding': 'chunked',
+        'Cache-Control': 'public, max-age=31536000, immutable',
       },
     });
 
