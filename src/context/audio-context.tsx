@@ -8,6 +8,7 @@ export interface AudioState {
   currentTime: number;
   duration: number;
   volume: number;
+  ended?: boolean;
 }
 
 interface AudioContextType {
@@ -36,12 +37,13 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
   });
 
   const emitChange = (updates: Partial<AudioState> = {}) => {
+    console.log("Updates: ", updates);
     setState((prev) => {
       const nextState = { ...prev, ...updates };
       setTimeout(() => {
         listenersRef.current.forEach((callback) => callback(nextState));
       }, 0);
-      return nextState;
+      return { ...nextState, ended: false };
     });
   };
 
@@ -54,7 +56,7 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
     audio.onvolumechange = () => emitChange({ volume: audio.volume });
     audio.onloadedmetadata = () => emitChange({ duration: audio.duration });
     audio.ontimeupdate = () => emitChange({ currentTime: audio.currentTime });
-    audio.onended = () => emitChange({ isPlaying: false, currentTime: 0 });
+    audio.onended = () => emitChange({ isPlaying: false, currentTime: 0, ended: true });
 
     return () => {
       audio.pause();

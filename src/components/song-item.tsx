@@ -11,11 +11,32 @@ import { getOfflineAssets, OfflineAssets, revokeBlobUrls } from '@/app/watch/_li
 import { Skeleton } from './ui/skeleton';
 
 interface SongItemProps {
-  song: SongData;
+  song: SongData | null;
   progress?: number | null;
 }
 
 export function SongItem({ song, progress = null }: SongItemProps) {
+  if (song === null) return (
+    <Item className="h-16 p-0 pr-3 border border-b-border rounded-none overflow-hidden group hover:bg-card hover:cursor-pointer relative">
+      <ItemMedia className="h-full translate-0! p-1.5">
+        <div className="aspect-square relative h-full">
+          <Skeleton className="w-full h-full" />
+        </div>
+      </ItemMedia>
+      <ItemContent className="text-nowrap overflow-hidden">
+        <ItemTitle className="text-[14px] font-medium group-hover:underline">
+          <Skeleton className="w-32 h-4 my-1" />
+        </ItemTitle>
+        <ItemDescription className="flex gap-2">
+          <Skeleton className="w-32 h-3 my-1" />
+        </ItemDescription>
+      </ItemContent>
+      <ItemActions>
+        <Skeleton />
+      </ItemActions>
+    </Item>
+  )
+
   const [mounted, setMounted] = useState(false);
 
   const [offlineAssets, setOfflineAssets] = useState<OfflineAssets | null>(null);
@@ -54,7 +75,7 @@ export function SongItem({ song, progress = null }: SongItemProps) {
     <Item className="h-16 p-0 pr-3 border border-b-border rounded-none overflow-hidden group hover:bg-card hover:cursor-pointer relative">
       <ItemMedia className="h-full translate-0! p-1.5">
         <div className="aspect-square relative h-full">
-          <Skeleton />
+          <Skeleton className="w-full h-full rounded-none" />
         </div>
       </ItemMedia>
       <ItemContent className="text-nowrap overflow-hidden">

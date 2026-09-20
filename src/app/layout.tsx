@@ -3,10 +3,11 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme/theme-provider";
-import { SearchProvider } from "@/components/search/search-context";
+import { SearchProvider } from "@/context/search-context";
 import { LayoutWrapper } from "@/components/layout-wrapper";
 import { AudioProvider } from "@/context/audio-context";
 import { SongsListProvider } from "@/context/songs-list-context";
+import { PlayNextProvider } from "@/context/play-next-context";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -42,9 +43,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <SearchProvider>
             <AudioProvider>
               <SongsListProvider>
-                <LayoutWrapper>
-                  {children}
-                </LayoutWrapper>
+                <PlayNextProvider>
+                  <LayoutWrapper>
+                    {children}
+                  </LayoutWrapper>
+                </PlayNextProvider>
               </SongsListProvider>
             </AudioProvider>
           </SearchProvider>

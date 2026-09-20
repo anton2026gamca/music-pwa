@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -19,9 +19,13 @@ import { useFetchSongData } from "@/hooks/use-fetch-song-data";
 import { CurrentlyPlaying } from "@/components/currently-playing";
 import { useCachedSongs } from "@/hooks/use-cached-songs";
 import { useDownloadedSongs } from "@/hooks/use-downloaded-songs";
+import { PlayNextList } from "@/components/play-next-list";
+import { usePlayNext } from "@/context/play-next-context";
 
 function WatchPageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+
   const songIdParam = searchParams.get("id");
 
   const { song, loading, error: songError } = useFetchSongData(songIdParam);
@@ -40,18 +44,9 @@ function WatchPageContent() {
   });
   const thumbnailUrl = offlineAssets.thumbnailUrl ?? song?.thumbnailUrl ?? '';
 
-  const { state: globalAudioState, togglePlay, playTrack } = useAudio();
+  const { state: globalAudioState, togglePlay, playTrack, subscribe: subscribeToAudio } = useAudio();
   const isPaused = !globalAudioState.isPlaying;
   const [triggerCount, setTriggerCount] = useState(0);
-
-  const handlePlayPause = () => {
-    if (song && globalAudioState.currentTrack !== song.id) {
-      playTrack(offlineAssets.songUrl, song.id);
-    } else {
-      togglePlay();
-      setTriggerCount(prev => prev + 1);
-    }
-  }
 
   const {
     songs: downloadedSongs,
@@ -65,6 +60,55 @@ function WatchPageContent() {
     removeSong: removeCachedSong,
     includesSong: isSongCached
   } = useCachedSongs();
+
+  const {
+    playNextList,
+    currentSongId: playlistCurrentSongId,
+    nextSong: playNextSong,
+    initializeQueue: initializePlayNextQueue,
+    initialized: playNextQueueInitialized,
+  } = usePlayNext();
+
+  const handlePlayPause = () => {
+    if (song && globalAudioState.currentTrack !== song.id) {
+      playTrack(offlineAssets.songUrl, song.id);
+    } else {
+      togglePlay();
+      setTriggerCount(prev => prev + 1);
+    }
+  }
+
+  const onSongEnded = (id: string) => {
+    if (id !== song?.id || id !== playlistCurrentSongId) {
+      return;
+    }
+
+    const nextSong = playNextSong();
+    if (nextSong === null) {
+      return;
+    }
+
+    sessionStorage.setItem(`song_${nextSong.id}`, JSON.stringify(nextSong))
+    router.push(`/watch?id=${encodeURIComponent(nextSong.id)}`)
+  }
+
+  useEffect(() => {
+    if (!playNextQueueInitialized && song !== null) {
+      initializePlayNextQueue(song, true);
+    }
+  }, [song?.id, playlistCurrentSongId]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToAudio((state) => {
+      if (state.ended && state.currentTrack !== null) {
+        onSongEnded(state.currentTrack);
+      }
+    })
+
+    return () => {
+      unsubscribe();
+    };
+  }, [song?.id, playNextList]);
 
   useEffect(() => {
     if (!song?.id) return;
@@ -84,8 +128,6 @@ function WatchPageContent() {
         removeDownloadedSong(song.id);
         removeCachedSong(song.id);
       }
-
-      console.log(cachedSongs, downloadedSongs);
     };
 
     loadMediaContext();
@@ -264,7 +306,7 @@ function WatchPageContent() {
 
           <Separator />
 
-          <div className="px-4">
+          <div className="px-4 mb-4">
             <OfflineStatus
               offlineAssets={offlineAssets}
               videoDownloading={videoDownloading}
@@ -278,9 +320,10 @@ function WatchPageContent() {
         </div>
 
         <Separator orientation="vertical" className="hidden lg:block h-auto min-h-full" />
-        <Separator orientation="horizontal" className="block lg:hidden my-2" />
+        <Separator orientation="horizontal" className="block lg:hidden" />
 
-        <div className="w-full lg:w-1/3 flex flex-col overflow-auto p-4">
+        <div className="w-full lg:w-1/3 flex flex-col overflow-auto">
+          <PlayNextList />
         </div>
       </div>
 
