@@ -264,11 +264,11 @@ function WatchPageContent() {
 
   return (
     <div className="flex flex-col w-full h-full items-stretch">
-      <div className="flex-1 flex flex-col lg:flex-row w-full items-stretch">
+      <div className="flex-1 flex flex-col lg:flex-row w-full items-stretch overflow-auto">
         <div className="w-full lg:w-2/3 space-y-4 pt-4">
           <div className="px-4 space-y-3">
             <div className="relative aspect-square md:aspect-video w-full bg-black rounded-lg overflow-hidden">
-              {offlineAssets && (offlineAssets.isOffline || autoplay)
+              {offlineAssets && (offlineAssets.isOffline || autoplay || globalAudioState.currentTrack === song.id)
                 ? (
                   <>
                     <Image
@@ -301,10 +301,7 @@ function WatchPageContent() {
                     ) : (
                       <div
                         className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity bg-black/30 flex flex-col items-center justify-center cursor-pointer"
-                        onClick={async () => {
-                          await handleDownload(true)
-                          handlePlayPause();
-                        }}
+                        onClick={() => handlePlayPause()}
                       >
                         <div className="rounded-full p-2 bg-muted text-foreground">
                           <Play className="h-8 w-8 fill-current stroke-none" />
