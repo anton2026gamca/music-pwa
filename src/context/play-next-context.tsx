@@ -11,7 +11,7 @@ interface PlayNextContextType {
   playNextList: SongData[] | null;
   currentSongId: string | null;
   initializeQueue: (currentSong: SongData, reset?: boolean) => Promise<void>;
-  nextSong: () => SongData | null;
+  nextSong: (songOverride?: SongData) => SongData | null;
 }
 
 const PlayNextContext = createContext<PlayNextContextType | undefined>(undefined);
@@ -28,8 +28,6 @@ export function PlayNextProvider({ children }: { children: ReactNode }) {
 
     setLoading(true);
     setCurrentSongId(currentSong.id);
-
-    console.log("initializeQueue", currentSong, reset);
 
     try {
       const suggestions = await getPlayNextSuggestions(currentSong.id);
@@ -49,20 +47,20 @@ export function PlayNextProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const nextSong = () => {
+  const nextSong = (songOverride?: SongData) => {
     if (!playNextList || playNextList.length === 0)
       return null;
 
     const playlistIndex = playlist?.findIndex((song) => song.id === currentSongId) ?? -1;
     const isLast = !playlist || playlist.length === 0 || playlistIndex === playlist?.length - 1;
 
-    const next = isLast ? playNextList[0] : playlist[playlistIndex + 1];
+    const next = songOverride
+      ? songOverride
+      : (isLast ? playNextList[0] : playlist[playlistIndex + 1]);
 
-    console.log("nextSong: ", playlist, playNextList, currentSongId, isLast, playlistIndex, next);
-
-    if (isLast) {
+    if (isLast || songOverride) {
       setPlaylist((prev) => [...prev ?? [], next])
-      setPlayNextList((prev) => prev?.slice(1) ?? [])
+      setPlayNextList((prev) => prev?.filter((song) => song.id !== next.id) ?? [])
     }
 
     setCurrentSongId(next.id);

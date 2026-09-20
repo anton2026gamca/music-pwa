@@ -37,7 +37,6 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
   });
 
   const emitChange = (updates: Partial<AudioState> = {}) => {
-    console.log("Updates: ", updates);
     setState((prev) => {
       const nextState = { ...prev, ...updates };
       setTimeout(() => {

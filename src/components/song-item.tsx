@@ -13,9 +13,10 @@ import { Skeleton } from './ui/skeleton';
 interface SongItemProps {
   song: SongData | null;
   progress?: number | null;
+  onClickOverride?: () => void;
 }
 
-export function SongItem({ song, progress = null }: SongItemProps) {
+export function SongItem({ song, progress = null, onClickOverride }: SongItemProps) {
   if (song === null) return (
     <Item className="h-16 p-0 pr-3 border border-b-border rounded-none overflow-hidden group hover:bg-card hover:cursor-pointer relative">
       <ItemMedia className="h-full translate-0! p-1.5">
@@ -108,6 +109,7 @@ export function SongItem({ song, progress = null }: SongItemProps) {
             src={thumbnailUrl}
             alt={title}
             fill
+            sizes="50px"
             className="object-cover"
             loading="lazy"
           />
@@ -125,7 +127,16 @@ export function SongItem({ song, progress = null }: SongItemProps) {
         {duration && (<span className="text-muted-foreground text-[14px] group-hover:hidden">{duration}</span>)}
         <ArrowRight className="hidden group-hover:block" />
       </ItemActions>
-      <Link href={`/watch?id=${songId}`} className="absolute inset-0 z-10 opacity-0">
+      <Link
+        href={`/watch?id=${songId}`}
+        className="absolute inset-0 z-10 opacity-0"
+        onClick={(e) => {
+          if (onClickOverride) {
+            e.preventDefault()
+            onClickOverride();
+          }
+        }}
+      >
         Play
       </Link>
     </Item>

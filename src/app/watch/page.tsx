@@ -21,6 +21,7 @@ import { useCachedSongs } from "@/hooks/use-cached-songs";
 import { useDownloadedSongs } from "@/hooks/use-downloaded-songs";
 import { PlayNextList } from "@/components/play-next-list";
 import { usePlayNext } from "@/context/play-next-context";
+import { SongPlaylist } from "@/components/song-playlist";
 
 function WatchPageContent() {
   const searchParams = useSearchParams();
@@ -62,6 +63,7 @@ function WatchPageContent() {
   } = useCachedSongs();
 
   const {
+    playlist: currentPlaylist,
     playNextList,
     currentSongId: playlistCurrentSongId,
     nextSong: playNextSong,
@@ -71,6 +73,9 @@ function WatchPageContent() {
 
   const handlePlayPause = () => {
     if (song && globalAudioState.currentTrack !== song.id) {
+      if (!currentPlaylist?.find((s) => s.id === song.id)) {
+        initializePlayNextQueue(song, true);
+      }
       playTrack(offlineAssets.songUrl, song.id);
     } else {
       togglePlay();
@@ -260,6 +265,7 @@ function WatchPageContent() {
                     <Image
                       src={thumbnailUrl} alt={song.title} fill
                       className="object-cover"
+                      loading="eager"
                       onClick={() => handlePlayPause()}
                     />
                     <PlayPauseOverlay isPaused={isPaused} triggerCount={triggerCount} />
@@ -271,7 +277,11 @@ function WatchPageContent() {
                   </>
                 ) : (
                   <>
-                    <Image src={thumbnailUrl} alt={song.title} fill className="object-cover" />
+                    <Image
+                      src={thumbnailUrl} alt={song.title} fill
+                      className="object-cover"
+                      loading="eager"
+                    />
 
                     {videoDownloading ? (
                       <div className="absolute inset-0 transition-opacity bg-black/30 backdrop-blur-sm flex flex-col items-center justify-center">
@@ -323,6 +333,7 @@ function WatchPageContent() {
         <Separator orientation="horizontal" className="block lg:hidden" />
 
         <div className="w-full lg:w-1/3 flex flex-col overflow-auto">
+          <SongPlaylist title="Current Playlist" songs={currentPlaylist} />
           <PlayNextList />
         </div>
       </div>
