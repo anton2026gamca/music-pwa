@@ -13,10 +13,11 @@ import { Skeleton } from './ui/skeleton';
 interface SongItemProps {
   song: SongData | null;
   progress?: number | null;
+  isActive?: boolean | null;
   onClickOverride?: () => void;
 }
 
-export function SongItem({ song, progress = null, onClickOverride }: SongItemProps) {
+export function SongItem({ song, progress = null, isActive = null, onClickOverride }: SongItemProps) {
   if (song === null) return (
     <Item className="h-16 p-0 pr-3 border border-b-border rounded-none overflow-hidden group hover:bg-card hover:cursor-pointer relative">
       <ItemMedia className="h-full translate-0! p-1.5">
@@ -98,7 +99,7 @@ export function SongItem({ song, progress = null, onClickOverride }: SongItemPro
   )
 
   return (
-    <Item className="h-16 p-0 pr-3 border border-b-border rounded-none overflow-hidden group hover:bg-card hover:cursor-pointer relative"
+    <Item className={`h-16 p-0 pr-3 ${isActive ? "border border-accent-foreground" : "border-b-border"} rounded-none overflow-hidden group hover:bg-card hover:cursor-pointer relative`}
       style={{
         background: progress !== null ? `linear-gradient(to right, var(--border) ${progress}%, var(--background) ${progress}%)` : undefined,
       }}

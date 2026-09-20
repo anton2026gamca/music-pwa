@@ -251,7 +251,7 @@ function WatchPageContent() {
 
   return (
     <div className="flex flex-col w-full h-full items-stretch">
-      <div className="flex-1 flex flex-col lg:flex-row w-full items-stretch overflow-auto">
+      <div className="flex-1 flex flex-col lg:flex-row w-full items-stretch lg:overflow-auto">
         <div className="w-full lg:w-2/3 space-y-4 pt-4">
           <div className="px-4 space-y-3">
             <div className="relative aspect-square md:aspect-video w-full bg-black rounded-lg overflow-hidden">

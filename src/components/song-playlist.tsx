@@ -46,7 +46,7 @@ export function SongPlaylist({ title, songs: mixedSongs }: SongPlaylistProps) {
             const progress = isPlaying ? (audioState.currentTime / audioState.duration) * 100 : undefined;
 
             return (
-              <SongItem song={song} key={i} progress={progress} />
+              <SongItem song={song} key={i} progress={progress} isActive={!!progress} />
             );
           })}
         </div>
