@@ -39,3 +39,49 @@ export function useFetchSongData(songId: string | null) {
 
   return { song, loading, error };
 }
+
+export function useFetchSongsData(songIds: string[]) {
+  const [songs, setSongs] = useState<SongData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const idsDependency = JSON.stringify(songIds);
+
+  useEffect(() => {
+    setSongs([]);
+    setError(null);
+
+    if (!songIds || songIds.length === 0) {
+      setError("No song IDs provided.");
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+
+    const fetchPromises = songIds.map(async (id) => {
+      const cached = sessionStorage.getItem(`song_${id}`) ?? localStorage.getItem(`song_${id}`);
+      if (cached) {
+        return JSON.parse(cached) as SongData;
+      }
+
+      return getSongDetails(id);
+    });
+
+    Promise.all(fetchPromises)
+      .then((results) => {
+        const validSongs = results.filter((song): song is SongData => song !== null);
+
+        if (validSongs.length > 0) {
+          setSongs(validSongs);
+        } else {
+          setError("Could not retrieve any song details.");
+        }
+      })
+      .catch(() => setError("An unexpected server error occurred."))
+      .finally(() => setLoading(false));
+
+  }, [idsDependency]);
+
+  return { songs, loading, error };
+}

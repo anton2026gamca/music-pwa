@@ -12,11 +12,9 @@ interface OfflineStatusProps {
   lyricsDownloading: boolean;
   thumbnailDownloading: boolean;
   onDownloadClick?: () => void;
-  showMoveToDownloads?: boolean;
-  onMoveToDownloadsClick?: () => void;
 }
 
-export function OfflineStatus({ offlineAssets, videoDownloading, lyricsDownloading, thumbnailDownloading, onDownloadClick, showMoveToDownloads, onMoveToDownloadsClick }: OfflineStatusProps) {
+export function OfflineStatus({ offlineAssets, videoDownloading, lyricsDownloading, thumbnailDownloading, onDownloadClick }: OfflineStatusProps) {
   const hasVideo = offlineAssets.isOffline;
   const hasLyrics = offlineAssets.lyrics !== null && offlineAssets.lyrics.length > 0;
   const hasThumbnail = offlineAssets.thumbnailUrl !== null;
@@ -67,12 +65,7 @@ export function OfflineStatus({ offlineAssets, videoDownloading, lyricsDownloadi
             Download All
           </Button>
         )}
-        {hasVideo && showMoveToDownloads && onMoveToDownloadsClick && (
-          <Button className="w-32" onClick={onMoveToDownloadsClick}>
-            Move to Downloads
-          </Button>
-        )}
-        {hasVideo && !showMoveToDownloads && !videoDownloading && (
+        {hasVideo && !videoDownloading && (
           <Badge className="text-xs font-medium">In downloaded songs</Badge>
         )}
       </div>

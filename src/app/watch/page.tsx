@@ -17,7 +17,6 @@ import { SongControls } from "@/components/song-controls";
 import { useAudio } from "@/context/audio-context";
 import { useFetchSongData } from "@/hooks/use-fetch-song-data";
 import { CurrentlyPlaying } from "@/components/currently-playing";
-import { useCachedSongs } from "@/hooks/use-cached-songs";
 import { useDownloadedSongs } from "@/hooks/use-downloaded-songs";
 import { PlayNextList } from "@/components/play-next-list";
 import { usePlayNext } from "@/context/play-next-context";
@@ -49,11 +48,6 @@ function WatchPageContent() {
     removeSong: removeDownloadedSong,
     includesSong: isSongDownloaded
   } = useDownloadedSongs();
-  const {
-    addSong: addCachedSong,
-    removeSong: removeCachedSong,
-    includesSong: isSongCached
-  } = useCachedSongs();
 
   const {
     playlist: currentPlaylist,
@@ -128,9 +122,8 @@ function WatchPageContent() {
       activeSongUrl = assets.songUrl;
       activeThumbUrl = assets.thumbnailUrl;
 
-      if (!assets.isOffline && (isSongDownloaded(song.id) || isSongCached(song.id))) {
+      if (!assets.isOffline && isSongDownloaded(song.id)) {
         removeDownloadedSong(song.id);
-        removeCachedSong(song.id);
       }
     };
 
@@ -161,7 +154,7 @@ function WatchPageContent() {
     };
   }, [handlePlayPause]);
 
-  const handleDownload = async (cacheOnly: boolean = false) => {
+  const handleDownload = async () => {
     if (!song?.id) {
       setError("No song available to download.");
       return;
@@ -186,13 +179,7 @@ function WatchPageContent() {
         setVideoDownloading(false);
       }
 
-      if (cacheOnly) {
-        addCachedSong(song);
-        removeDownloadedSong(song.id);
-      } else {
-        addDownloadedSong(song);
-        removeCachedSong(song.id);
-      }
+      addDownloadedSong(song);
 
       if (!offlineAssets.thumbnailUrl) {
         setThumbnailDownloading(true);
@@ -330,8 +317,6 @@ function WatchPageContent() {
                 lyricsDownloading={lyricsDownloading}
                 thumbnailDownloading={thumbnailDownloading}
                 onDownloadClick={() => handleDownload()}
-                showMoveToDownloads={isSongCached(song.id)}
-                onMoveToDownloadsClick={() => handleDownload()}
               />
             )}
           </div>

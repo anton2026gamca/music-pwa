@@ -1,10 +1,9 @@
 import { SongData } from "@/app/api/actions";
 import { SongItem } from "./song-item";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { useCachedSongs } from "@/hooks/use-cached-songs";
-import { useDownloadedSongs } from "@/hooks/use-downloaded-songs";
 import { useAudio } from "@/context/audio-context";
+import { useFetchSongsData } from "@/hooks/use-fetch-song-data";
 
 
 interface SongPlaylistProps {
@@ -12,12 +11,14 @@ interface SongPlaylistProps {
   songs: Array<string | SongData> | null;
 }
 
-export function SongPlaylist({ title, songs }: SongPlaylistProps) {
-  const { getSongData: getDownloadedSongData } = useDownloadedSongs();
-  const { getSongData: getCachedSongData } = useCachedSongs();
+export function SongPlaylist({ title, songs: mixedSongs }: SongPlaylistProps) {
   const [isOpen, setIsOpen] = useState(true);
-
   const { state: audioState } = useAudio();
+
+  const songIdsToFetch = (mixedSongs ?? [])
+    .filter((song): song is string => typeof song === 'string');
+
+  const { songs: fetchedSongs } = useFetchSongsData(songIdsToFetch);
 
   return (
     <div className="w-full">
@@ -27,7 +28,6 @@ export function SongPlaylist({ title, songs }: SongPlaylistProps) {
         className="flex justify-between items-center w-full px-3 py-2 text-sm font-semibold uppercase hover:bg-neutral-100 dark:hover:bg-neutral-900 border-b border-border"
       >
         <span>{title}</span>
-
         {isOpen ? (
           <ChevronUp className="w-4 h-4 text-neutral-500" />
         ) : (
@@ -37,15 +37,16 @@ export function SongPlaylist({ title, songs }: SongPlaylistProps) {
 
       {isOpen && (
         <div>
-          {songs && songs.map((raw, i) => {
-            const song = typeof raw === 'string' ? (getDownloadedSongData(raw) ?? getCachedSongData(raw)) : raw;
-            if (!song) return null;
+          {mixedSongs && mixedSongs.map((raw, i) => {
+            const song = typeof raw === 'string'
+              ? (fetchedSongs.find((f) => f.id === raw) ?? null)
+              : raw;
 
-            const isPlaying = song.id === audioState.currentTrack;
-            const progress = isPlaying ? audioState.currentTime / audioState.duration * 100 : undefined;
+            const isPlaying = song?.id === audioState.currentTrack;
+            const progress = isPlaying ? (audioState.currentTime / audioState.duration) * 100 : undefined;
 
             return (
-              <SongItem song={song} key={song.id} progress={progress} />
+              <SongItem song={song} key={i} progress={progress} />
             );
           })}
         </div>
