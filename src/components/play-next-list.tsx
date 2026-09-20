@@ -6,12 +6,16 @@ import { usePlayNext } from "@/context/play-next-context";
 import { SongData } from "@/app/api/actions";
 import { useRouter } from "next/navigation";
 
-export function PlayNextList() {
+export function PlayNextList({ onEnabledChanged }: { onEnabledChanged?: (enabled: boolean) => void }) {
   const router = useRouter()
 
   const [enabled, setEnabled] = useState(true);
   const { playNextList, loading, nextSong } = usePlayNext();
   const [onClickOverrides, setOnClickOverrides] = useState<Array<(() => void) | null> | null>(null);
+
+  useEffect(() => {
+    onEnabledChanged?.(enabled);
+  }, [enabled, onEnabledChanged]);
 
   const getSongOnClickOverride = (song: SongData) => (() => {
     nextSong(song);

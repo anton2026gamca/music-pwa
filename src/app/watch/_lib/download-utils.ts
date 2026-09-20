@@ -1,4 +1,5 @@
 export interface OfflineAssets {
+  songId: string;
   isOffline: boolean;
   fileSize: string | null;
   songUrl: string;
@@ -47,6 +48,7 @@ export async function getOfflineAssets(
       }
 
       return {
+        songId,
         isOffline: true,
         songUrl: songUrl,
         fileSize,
@@ -59,6 +61,7 @@ export async function getOfflineAssets(
   }
 
   return {
+    songId,
     isOffline: false,
     songUrl: downloadUrl,
     fileSize: null,

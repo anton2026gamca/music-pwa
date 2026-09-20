@@ -1,7 +1,7 @@
 "use client";
 
 import { getPlayNextSuggestions, SongData } from '@/app/api/actions';
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 
 interface PlayNextContextType {
   initialized: boolean;
@@ -23,7 +23,7 @@ export function PlayNextProvider({ children }: { children: ReactNode }) {
   const [playNextList, setPlayNextList] = useState<SongData[] | null>(null);
   const [currentSongId, setCurrentSongId] = useState<string | null>(null);
 
-  const initializeQueue = async (currentSong: SongData, reset: boolean = false) => {
+  const initializeQueue = useCallback(async (currentSong: SongData, reset: boolean = false) => {
     if (currentSong.id === currentSongId) return;
 
     setLoading(true);
@@ -31,23 +31,25 @@ export function PlayNextProvider({ children }: { children: ReactNode }) {
 
     try {
       const suggestions = await getPlayNextSuggestions(currentSong.id);
+
       if (reset || !playlist || playlist.length === 0) {
-        setPlaylist([currentSong])
+        setPlaylist([currentSong]);
       }
+
       setPlayNextList((prev) => {
         return reset || !prev
           ? suggestions ?? []
           : [...prev, ...suggestions ?? []];
-      })
+      });
       setInitialized(true);
     } catch (error) {
       console.error("Failed to load play next queue", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentSongId, playlist, getPlayNextSuggestions]);
 
-  const nextSong = (songOverride?: SongData) => {
+  const nextSong = useCallback((songOverride?: SongData) => {
     if (!playNextList || playNextList.length === 0)
       return null;
 
@@ -70,7 +72,7 @@ export function PlayNextProvider({ children }: { children: ReactNode }) {
     }
 
     return next;
-  };
+  }, [playNextList, playlist, currentSongId, initializeQueue]);
 
   return (
     <PlayNextContext.Provider value={{ initialized, setInitialized, loading, playlist, playNextList, currentSongId, initializeQueue, nextSong }}>

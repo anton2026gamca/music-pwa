@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Loader2, AlertCircle, Play } from "lucide-react";
@@ -28,6 +28,7 @@ function WatchPageContent() {
   const router = useRouter();
 
   const songIdParam = searchParams.get("id");
+  const autoplay = ["true", "1"].includes(searchParams.get("autoplay") ?? "false");
 
   const { song, loading, error: songError } = useFetchSongData(songIdParam);
   const [error, setError] = useState<string | null>(null);
@@ -36,27 +37,19 @@ function WatchPageContent() {
   const [lyricsDownloading, setLyricsDownloading] = useState(false);
   const [thumbnailDownloading, setThumbnailDownloading] = useState(false);
 
-  const [offlineAssets, setOfflineAssets] = useState<OfflineAssets>({
-    isOffline: false,
-    songUrl: '',
-    fileSize: null,
-    thumbnailUrl: null,
-    lyrics: null,
-  });
-  const thumbnailUrl = offlineAssets.thumbnailUrl ?? song?.thumbnailUrl ?? '';
+  const [offlineAssets, setOfflineAssets] = useState<OfflineAssets | null>(null);
+  const thumbnailUrl = offlineAssets?.thumbnailUrl ?? song?.thumbnailUrl ?? '';
 
   const { state: globalAudioState, togglePlay, playTrack, subscribe: subscribeToAudio } = useAudio();
   const isPaused = !globalAudioState.isPlaying;
   const [triggerCount, setTriggerCount] = useState(0);
 
   const {
-    songs: downloadedSongs,
     addSong: addDownloadedSong,
     removeSong: removeDownloadedSong,
     includesSong: isSongDownloaded
   } = useDownloadedSongs();
   const {
-    songs: cachedSongs,
     addSong: addCachedSong,
     removeSong: removeCachedSong,
     includesSong: isSongCached
@@ -71,8 +64,14 @@ function WatchPageContent() {
     initialized: playNextQueueInitialized,
   } = usePlayNext();
 
+  const [autoPlayNext, setAutoPlayNext] = useState(true);
+
+  const onAutoplayEnabledChanged = useCallback((enabled: boolean) => {
+    setAutoPlayNext(enabled);
+  }, []);
+
   const handlePlayPause = () => {
-    if (song && globalAudioState.currentTrack !== song.id) {
+    if (song && globalAudioState.currentTrack !== song.id && offlineAssets) {
       if (!currentPlaylist?.find((s) => s.id === song.id)) {
         initializePlayNextQueue(song, true);
       }
@@ -83,8 +82,8 @@ function WatchPageContent() {
     }
   }
 
-  const onSongEnded = (id: string) => {
-    if (id !== song?.id || id !== playlistCurrentSongId) {
+  const onSongEnded = useCallback((id: string) => {
+    if (id !== song?.id || id !== playlistCurrentSongId || !autoPlayNext) {
       return;
     }
 
@@ -94,8 +93,8 @@ function WatchPageContent() {
     }
 
     sessionStorage.setItem(`song_${nextSong.id}`, JSON.stringify(nextSong))
-    router.push(`/watch?id=${encodeURIComponent(nextSong.id)}`)
-  }
+    router.push(`/watch?id=${encodeURIComponent(nextSong.id)}&autoplay=1`)
+  }, [autoPlayNext, song, playlistCurrentSongId, playNextSong]);
 
   useEffect(() => {
     if (!playNextQueueInitialized && song !== null) {
@@ -113,7 +112,7 @@ function WatchPageContent() {
     return () => {
       unsubscribe();
     };
-  }, [song?.id, playNextList]);
+  }, [song?.id, playNextList, onSongEnded]);
 
   useEffect(() => {
     if (!song?.id) return;
@@ -168,6 +167,10 @@ function WatchPageContent() {
       return;
     }
 
+    if (!offlineAssets) {
+      throw new Error("Offline assets not initialized.");
+    }
+
     setError(null);
 
     try {
@@ -214,6 +217,12 @@ function WatchPageContent() {
     }
   };
 
+  useEffect(() => {
+    if (autoplay && song && globalAudioState.currentTrack !== song.id && offlineAssets?.songId === song.id) {
+      playTrack(offlineAssets.songUrl, song.id);
+    }
+  }, [song?.id, offlineAssets?.songUrl]);
+
   if (loading) {
     return (
       <div className="flex flex-col lg:flex-row w-full min-h-screen mx-auto items-stretch lg:max-h-screen">
@@ -255,11 +264,11 @@ function WatchPageContent() {
 
   return (
     <div className="flex flex-col w-full h-full items-stretch">
-      <div className="flex flex-col lg:flex-row w-full h-full items-stretch">
+      <div className="flex-1 flex flex-col lg:flex-row w-full items-stretch">
         <div className="w-full lg:w-2/3 space-y-4 pt-4">
           <div className="px-4 space-y-3">
             <div className="relative aspect-square md:aspect-video w-full bg-black rounded-lg overflow-hidden">
-              {offlineAssets.isOffline
+              {offlineAssets && (offlineAssets.isOffline || autoplay)
                 ? (
                   <>
                     <Image
@@ -317,15 +326,17 @@ function WatchPageContent() {
           <Separator />
 
           <div className="px-4 mb-4">
-            <OfflineStatus
-              offlineAssets={offlineAssets}
-              videoDownloading={videoDownloading}
-              lyricsDownloading={lyricsDownloading}
-              thumbnailDownloading={thumbnailDownloading}
-              onDownloadClick={() => handleDownload()}
-              showMoveToDownloads={isSongCached(song.id)}
-              onMoveToDownloadsClick={() => handleDownload()}
-            />
+            {offlineAssets && (
+              <OfflineStatus
+                offlineAssets={offlineAssets}
+                videoDownloading={videoDownloading}
+                lyricsDownloading={lyricsDownloading}
+                thumbnailDownloading={thumbnailDownloading}
+                onDownloadClick={() => handleDownload()}
+                showMoveToDownloads={isSongCached(song.id)}
+                onMoveToDownloadsClick={() => handleDownload()}
+              />
+            )}
           </div>
         </div>
 
@@ -334,7 +345,7 @@ function WatchPageContent() {
 
         <div className="w-full lg:w-1/3 flex flex-col overflow-auto">
           <SongPlaylist title="Current Playlist" songs={currentPlaylist} />
-          <PlayNextList />
+          <PlayNextList onEnabledChanged={onAutoplayEnabledChanged} />
         </div>
       </div>
 
