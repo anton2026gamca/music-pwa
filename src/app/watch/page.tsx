@@ -21,6 +21,7 @@ import { useDownloadedSongs } from "@/hooks/use-downloaded-songs";
 import { PlayNextList } from "@/components/play-next-list";
 import { usePlayNext } from "@/context/play-next-context";
 import { SongPlaylist } from "@/components/song-playlist";
+import { ThreeDotMenu } from "@/components/ui/three-dot-menu";
 
 function WatchPageContent() {
   const searchParams = useSearchParams();
@@ -56,6 +57,7 @@ function WatchPageContent() {
     nextSong: playNextSong,
     initializeQueue: initializePlayNextQueue,
     initialized: playNextQueueInitialized,
+    addSong: addSongToPlaylist,
   } = usePlayNext();
 
   const [autoPlayNext, setAutoPlayNext] = useState(true);
@@ -299,10 +301,21 @@ function WatchPageContent() {
                 )}
             </div>
 
-            <div className="px-1 flex justify-between items-start">
-              <div>
+            <div className="px-1 flex items-center text-nowrap gap-2">
+              <div className="flex-1 overflow-hidden">
                 <h2 className="text-xl font-semibold tracking-tight">{song.title}</h2>
                 <p className="text-sm text-muted-foreground">{song.artistName}</p>
+              </div>
+              <div>
+                <ThreeDotMenu groups={[{
+                  fields: [
+                    {
+                      label: "Add to current Playlist",
+                      onClick: () => addSongToPlaylist(song),
+                      disabled: currentPlaylist?.find((s) => s.id === song.id) !== undefined
+                    }
+                  ]
+                }]} />
               </div>
             </div>
           </div>
