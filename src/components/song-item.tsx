@@ -15,9 +15,10 @@ interface SongItemProps {
   progress?: number | null;
   isActive?: boolean | null;
   onClickOverride?: () => void;
+  iconOverride?: React.JSX.Element;
 }
 
-export function SongItem({ song, progress = null, isActive = null, onClickOverride }: SongItemProps) {
+export function SongItem({ song, progress = null, isActive = null, onClickOverride, iconOverride }: SongItemProps) {
   if (song === null) return (
     <Item className="h-16 p-0 pr-3 border border-b-border rounded-none overflow-hidden group hover:bg-card hover:cursor-pointer relative">
       <ItemMedia className="h-full translate-0! p-1.5">
@@ -126,7 +127,9 @@ export function SongItem({ song, progress = null, isActive = null, onClickOverri
       </ItemContent>
       <ItemActions>
         {duration && (<span className="text-muted-foreground text-[14px] group-hover:hidden">{duration}</span>)}
-        <ArrowRight className="hidden group-hover:block" />
+        <span className="hidden group-hover:block">
+          {iconOverride ? iconOverride : <ArrowRight />}
+        </span>
       </ItemActions>
       <Link
         href={`/watch?id=${songId}`}

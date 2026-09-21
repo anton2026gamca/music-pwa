@@ -54,7 +54,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
         )}
 
         <div className={`
-          w-80 h-full bg-background
+          w-60 lg:w-80 h-full bg-background
           fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 ease-in-out
           ${isSidebarOpen ? 'translate-x-0 md:hidden' : '-translate-x-full md:block'}
           md:relative md:translate-x-0

@@ -22,6 +22,7 @@ import { PlayNextList } from "@/components/play-next-list";
 import { usePlaylist } from "@/context/playlist-context";
 import { SongPlaylist } from "@/components/song-playlist";
 import { ThreeDotMenu } from "@/components/ui/three-dot-menu";
+import { SongData } from "../api/actions";
 
 function WatchPageContent() {
   const searchParams = useSearchParams();
@@ -52,6 +53,7 @@ function WatchPageContent() {
 
   const {
     playlist: currentPlaylist,
+    setPlaylist: setCurrentPlaylist,
     nextSong: playNextSong,
     initializeQueue: initializePlayNextQueue,
     initialized: playNextQueueInitialized,
@@ -343,7 +345,12 @@ function WatchPageContent() {
         <Separator orientation="horizontal" className="block lg:hidden" />
 
         <div className="w-full lg:w-1/3 flex flex-col overflow-auto">
-          <SongPlaylist title="Current Playlist" songs={currentPlaylist} />
+          <SongPlaylist
+            title="Current Playlist"
+            songs={currentPlaylist}
+            enableReorder={true}
+            onReorder={(newSongs) => setCurrentPlaylist(newSongs as SongData[])}
+          />
           <PlayNextList onEnabledChanged={onAutoplayEnabledChanged} />
         </div>
       </div>

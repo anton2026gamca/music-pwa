@@ -9,7 +9,9 @@ interface PlayNextContextType {
   setInitialized: (enabled: boolean) => void;
   loading: boolean;
   playlist: SongData[] | null;
+  setPlaylist: (songs: SongData[] | null) => void;
   playNextList: SongData[] | null;
+  setPlayNextList: (songs: SongData[] | null) => void;
   initializeQueue: (currentSong: SongData, reset?: boolean) => Promise<void>;
   nextSong: (songOverride?: SongData) => SongData | null;
   addSong: (song: SongData) => void;
@@ -86,7 +88,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
   }, [currentSongId]);
 
   return (
-    <PlayNextContext.Provider value={{ initialized, setInitialized, loading, playlist, playNextList, initializeQueue, nextSong, addSong, removeSong }}>
+    <PlayNextContext.Provider value={{ initialized, setInitialized, loading, playlist, setPlaylist, playNextList, setPlayNextList, initializeQueue, nextSong, addSong, removeSong }}>
       {children}
     </PlayNextContext.Provider>
   );

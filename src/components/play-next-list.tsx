@@ -5,12 +5,14 @@ import { Separator } from "./ui/separator";
 import { usePlaylist } from "@/context/playlist-context";
 import { SongData } from "@/app/api/actions";
 import { useRouter } from "next/navigation";
+import { SongPlaylist } from "./song-playlist";
+import { Plus } from "lucide-react";
 
 export function PlayNextList({ onEnabledChanged }: { onEnabledChanged?: (enabled: boolean) => void }) {
   const router = useRouter()
 
   const [enabled, setEnabled] = useState(true);
-  const { playNextList, loading, nextSong } = usePlaylist();
+  const { playNextList, setPlayNextList, loading, nextSong } = usePlaylist();
   const [onClickOverrides, setOnClickOverrides] = useState<Array<(() => void) | null> | null>(null);
 
   useEffect(() => {
@@ -49,9 +51,15 @@ export function PlayNextList({ onEnabledChanged }: { onEnabledChanged?: (enabled
         <SongItem key={i} song={null} />
       ))}
 
-      {!loading && enabled && playNextList && playNextList.map((song, i) => (
-        <SongItem key={i} song={song} onClickOverride={onClickOverrides?.[i] ?? undefined} />
-      ))}
+      {!loading && enabled && playNextList && (
+        <SongPlaylist
+          songs={playNextList}
+          onClickOverrides={onClickOverrides}
+          iconOverrides={onClickOverrides?.map(() => <Plus />) ?? null}
+          enableReorder={true}
+          onReorder={(newSongs) => setPlayNextList(newSongs as SongData[])}
+        />
+      )}
     </div>
   );
 }
