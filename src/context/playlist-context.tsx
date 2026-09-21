@@ -10,7 +10,6 @@ interface PlayNextContextType {
   loading: boolean;
   playlist: SongData[] | null;
   playNextList: SongData[] | null;
-  currentSongId: string | null;
   initializeQueue: (currentSong: SongData, reset?: boolean) => Promise<void>;
   nextSong: (songOverride?: SongData) => SongData | null;
   addSong: (song: SongData) => void;
@@ -23,13 +22,12 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [playlist, setPlaylist] = useState<SongData[] | null>(null);
   const [playNextList, setPlayNextList] = useState<SongData[] | null>(null);
-  const [currentSongId, setCurrentSongId] = useState<string | null>(null);
+  const { state: { currentTrack: currentSongId } } = useAudio();
 
   const initializeQueue = useCallback(async (currentSong: SongData, reset: boolean = false) => {
     if (currentSong.id === currentSongId) return;
 
     setLoading(true);
-    setCurrentSongId(currentSong.id);
 
     try {
       const suggestions = await getPlayNextSuggestions(currentSong.id);
@@ -52,24 +50,23 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
   }, [currentSongId, playlist, getPlayNextSuggestions]);
 
   const nextSong = useCallback((songOverride?: SongData) => {
-    if (!playNextList || playNextList.length === 0)
-      return null;
-
     const playlistIndex = playlist?.findIndex((song) => song.id === currentSongId) ?? -1;
     const isLast = !playlist || playlist.length === 0 || playlistIndex === playlist?.length - 1;
 
     const next = songOverride
       ? songOverride
-      : (isLast ? playNextList[0] : playlist[playlistIndex + 1]);
+      : (isLast ? playNextList?.[0] : playlist[playlistIndex + 1]);
+
+    if (!next) {
+      return null;
+    }
 
     if (isLast || songOverride) {
       setPlaylist((prev) => [...prev ?? [], next])
       setPlayNextList((prev) => prev?.filter((song) => song.id !== next.id) ?? [])
     }
 
-    setCurrentSongId(next.id);
-
-    if (currentSongId && playNextList.length < 5) {
+    if (currentSongId && (!playNextList || playNextList.length < 5)) {
       initializeQueue(next);
     }
 
@@ -81,7 +78,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <PlayNextContext.Provider value={{ initialized, setInitialized, loading, playlist, playNextList, currentSongId, initializeQueue, nextSong, addSong }}>
+    <PlayNextContext.Provider value={{ initialized, setInitialized, loading, playlist, playNextList, initializeQueue, nextSong, addSong }}>
       {children}
     </PlayNextContext.Provider>
   );

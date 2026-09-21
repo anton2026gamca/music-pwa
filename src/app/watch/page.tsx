@@ -52,8 +52,6 @@ function WatchPageContent() {
 
   const {
     playlist: currentPlaylist,
-    playNextList,
-    currentSongId: playlistCurrentSongId,
     nextSong: playNextSong,
     initializeQueue: initializePlayNextQueue,
     initialized: playNextQueueInitialized,
@@ -79,7 +77,7 @@ function WatchPageContent() {
   }
 
   const onSongEnded = useCallback((id: string) => {
-    if (id !== song?.id || id !== playlistCurrentSongId || !autoPlayNext) {
+    if (!autoPlayNext) {
       return;
     }
 
@@ -90,13 +88,13 @@ function WatchPageContent() {
 
     sessionStorage.setItem(`song_${nextSong.id}`, JSON.stringify(nextSong))
     router.push(`/watch?id=${encodeURIComponent(nextSong.id)}&autoplay=1`)
-  }, [autoPlayNext, song, playlistCurrentSongId, playNextSong]);
+  }, [autoPlayNext, playNextSong]);
 
   useEffect(() => {
     if (!playNextQueueInitialized && song !== null) {
       initializePlayNextQueue(song, true);
     }
-  }, [song?.id, playlistCurrentSongId]);
+  }, [song?.id]);
 
   useEffect(() => {
     const unsubscribe = subscribeToAudio((state) => {
@@ -108,7 +106,7 @@ function WatchPageContent() {
     return () => {
       unsubscribe();
     };
-  }, [song?.id, playNextList, onSongEnded]);
+  }, [onSongEnded]);
 
   useEffect(() => {
     if (!song?.id) return;
