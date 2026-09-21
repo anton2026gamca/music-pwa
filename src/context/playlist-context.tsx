@@ -13,6 +13,7 @@ interface PlayNextContextType {
   initializeQueue: (currentSong: SongData, reset?: boolean) => Promise<void>;
   nextSong: (songOverride?: SongData) => SongData | null;
   addSong: (song: SongData) => void;
+  removeSong: (songId: string) => void;
 }
 
 const PlayNextContext = createContext<PlayNextContextType | undefined>(undefined);
@@ -77,8 +78,15 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
     setPlaylist((prev) => [...prev ?? [], song]);
   }, []);
 
+  const removeSong = useCallback((songId: string) => {
+    if (songId === currentSongId) {
+      return;
+    }
+    setPlaylist((prev) => prev?.filter((song) => song.id !== songId) ?? []);
+  }, [currentSongId]);
+
   return (
-    <PlayNextContext.Provider value={{ initialized, setInitialized, loading, playlist, playNextList, initializeQueue, nextSong, addSong }}>
+    <PlayNextContext.Provider value={{ initialized, setInitialized, loading, playlist, playNextList, initializeQueue, nextSong, addSong, removeSong }}>
       {children}
     </PlayNextContext.Provider>
   );

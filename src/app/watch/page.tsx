@@ -56,6 +56,7 @@ function WatchPageContent() {
     initializeQueue: initializePlayNextQueue,
     initialized: playNextQueueInitialized,
     addSong: addSongToPlaylist,
+    removeSong: removeSongFromPlaylist
   } = usePlaylist();
 
   const [autoPlayNext, setAutoPlayNext] = useState(true);
@@ -308,10 +309,15 @@ function WatchPageContent() {
                 <ThreeDotMenu groups={[{
                   fields: [
                     {
-                      label: "Add to current Playlist",
+                      label: "Add to Playlist",
                       onClick: () => addSongToPlaylist(song),
                       disabled: currentPlaylist?.find((s) => s.id === song.id) !== undefined
-                    }
+                    },
+                    {
+                      label: "Remove from Playlist",
+                      onClick: () => removeSongFromPlaylist(song.id),
+                      disabled: currentPlaylist?.find((s) => s.id === song.id) === undefined || globalAudioState.currentTrack === song.id
+                    },
                   ]
                 }]} />
               </div>
