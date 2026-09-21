@@ -7,7 +7,7 @@ import { SearchProvider } from "@/context/search-context";
 import { LayoutWrapper } from "@/components/layout-wrapper";
 import { AudioProvider } from "@/context/audio-context";
 import { SongsListProvider } from "@/context/songs-list-context";
-import { PlayNextProvider } from "@/context/play-next-context";
+import { PlaylistProvider } from "@/context/playlist-context";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -43,11 +43,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <SearchProvider>
             <AudioProvider>
               <SongsListProvider>
-                <PlayNextProvider>
+                <PlaylistProvider>
                   <LayoutWrapper>
                     {children}
                   </LayoutWrapper>
-                </PlayNextProvider>
+                </PlaylistProvider>
               </SongsListProvider>
             </AudioProvider>
           </SearchProvider>

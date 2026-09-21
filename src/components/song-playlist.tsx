@@ -16,7 +16,7 @@ export function SongPlaylist({ title, songs: mixedSongs }: SongPlaylistProps) {
   const { state: audioState } = useAudio();
 
   const songIdsToFetch = (mixedSongs ?? [])
-    .filter((song): song is string => typeof song === 'string');
+    .filter((song) => typeof song === 'string');
 
   const { songs: fetchedSongs } = useFetchSongsData(songIdsToFetch);
 

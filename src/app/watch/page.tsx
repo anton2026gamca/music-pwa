@@ -19,7 +19,7 @@ import { useFetchSongData } from "@/hooks/use-fetch-song-data";
 import { CurrentlyPlaying } from "@/components/currently-playing";
 import { useDownloadedSongs } from "@/hooks/use-downloaded-songs";
 import { PlayNextList } from "@/components/play-next-list";
-import { usePlayNext } from "@/context/play-next-context";
+import { usePlaylist } from "@/context/playlist-context";
 import { SongPlaylist } from "@/components/song-playlist";
 import { ThreeDotMenu } from "@/components/ui/three-dot-menu";
 
@@ -58,7 +58,7 @@ function WatchPageContent() {
     initializeQueue: initializePlayNextQueue,
     initialized: playNextQueueInitialized,
     addSong: addSongToPlaylist,
-  } = usePlayNext();
+  } = usePlaylist();
 
   const [autoPlayNext, setAutoPlayNext] = useState(true);
 

@@ -2,6 +2,7 @@
 
 import { getPlayNextSuggestions, SongData } from '@/app/api/actions';
 import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import { useAudio } from './audio-context';
 
 interface PlayNextContextType {
   initialized: boolean;
@@ -17,7 +18,7 @@ interface PlayNextContextType {
 
 const PlayNextContext = createContext<PlayNextContextType | undefined>(undefined);
 
-export function PlayNextProvider({ children }: { children: ReactNode }) {
+export function PlaylistProvider({ children }: { children: ReactNode }) {
   const [initialized, setInitialized] = useState(false);
   const [loading, setLoading] = useState(false);
   const [playlist, setPlaylist] = useState<SongData[] | null>(null);
@@ -86,7 +87,7 @@ export function PlayNextProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function usePlayNext() {
+export function usePlaylist() {
   const context = useContext(PlayNextContext);
   if (!context) {
     throw new Error('usePlayNext must be used within a PlayNextProvider');

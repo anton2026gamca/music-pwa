@@ -2,7 +2,7 @@ import { startTransition, useEffect, useState } from "react";
 import { Switch } from "./ui/switch";
 import { SongItem } from "./song-item";
 import { Separator } from "./ui/separator";
-import { usePlayNext } from "@/context/play-next-context";
+import { usePlaylist } from "@/context/playlist-context";
 import { SongData } from "@/app/api/actions";
 import { useRouter } from "next/navigation";
 
@@ -10,7 +10,7 @@ export function PlayNextList({ onEnabledChanged }: { onEnabledChanged?: (enabled
   const router = useRouter()
 
   const [enabled, setEnabled] = useState(true);
-  const { playNextList, loading, nextSong } = usePlayNext();
+  const { playNextList, loading, nextSong } = usePlaylist();
   const [onClickOverrides, setOnClickOverrides] = useState<Array<(() => void) | null> | null>(null);
 
   useEffect(() => {
