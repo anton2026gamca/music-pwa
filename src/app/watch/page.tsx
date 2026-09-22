@@ -227,7 +227,7 @@ function WatchPageContent() {
     return (
       <div className="flex flex-col lg:flex-row w-full min-h-screen mx-auto items-stretch lg:max-h-screen">
         <div className="w-full lg:w-2/3 space-y-3 p-4">
-          <div className="relative aspect-video w-full bg-black rounded-lg overflow-hidden">
+          <div className="relative aspect-square md:aspect-video w-full bg-black rounded-lg overflow-hidden">
             <Skeleton className="absolute inset-0 w-full h-full" />
           </div>
           <div className="px-1">
