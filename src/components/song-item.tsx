@@ -6,7 +6,7 @@ import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { formatDuration } from '@/lib/utils';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { getOfflineAssets, OfflineAssets, revokeBlobUrls } from '@/app/watch/_lib/download-utils';
 import { Skeleton } from './ui/skeleton';
 
@@ -18,7 +18,7 @@ interface SongItemProps {
   iconOverride?: React.JSX.Element;
 }
 
-export function SongItem({ song, progress = null, isActive = null, onClickOverride, iconOverride }: SongItemProps) {
+function SongItemImpl({ song, progress = null, isActive = null, onClickOverride, iconOverride }: SongItemProps) {
   if (song === null) return (
     <Item className="h-16 p-0 pr-3 border border-b-border rounded-none overflow-hidden group hover:bg-card hover:cursor-pointer relative">
       <ItemMedia className="h-full translate-0! p-1.5">
@@ -146,3 +146,5 @@ export function SongItem({ song, progress = null, isActive = null, onClickOverri
     </Item>
   );
 }
+
+export const SongItem = memo(SongItemImpl);
