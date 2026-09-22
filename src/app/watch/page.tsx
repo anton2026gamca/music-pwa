@@ -34,6 +34,8 @@ function WatchPageContent() {
   const { song, loading, error: songError } = useFetchSongData(songIdParam);
   const [error, setError] = useState<string | null>(null);
 
+  const [audioReady, setAudioReady] = useState(false);
+
   const [videoDownloading, setVideoDownloading] = useState(false);
   const [lyricsDownloading, setLyricsDownloading] = useState(false);
   const [thumbnailDownloading, setThumbnailDownloading] = useState(false);
@@ -41,7 +43,7 @@ function WatchPageContent() {
   const [offlineAssets, setOfflineAssets] = useState<OfflineAssets | null>(null);
   const thumbnailUrl = offlineAssets?.thumbnailUrl ?? song?.thumbnailUrl ?? '';
 
-  const { state: globalAudioState, togglePlay, playTrack, subscribe: subscribeToAudio } = useAudio();
+  const { state: globalAudioState, togglePlay, playSong, subscribe: subscribeToAudio } = useAudio();
   const isPaused = !globalAudioState.isPlaying;
   const [triggerCount, setTriggerCount] = useState(0);
 
@@ -68,18 +70,18 @@ function WatchPageContent() {
   }, []);
 
   const handlePlayPause = () => {
-    if (song && globalAudioState.currentTrack !== song.id && offlineAssets) {
+    if (song && globalAudioState.currentTrack?.id !== song.id && offlineAssets) {
       if (!currentPlaylist?.find((s) => s.id === song.id)) {
         initializePlayNextQueue(song, true);
       }
-      playTrack(offlineAssets.songUrl, song.id);
+      playSong(offlineAssets.songUrl, song);
     } else {
       togglePlay();
       setTriggerCount(prev => prev + 1);
     }
   }
 
-  const onSongEnded = useCallback((id: string) => {
+  const onSongEnded = useCallback(() => {
     if (!autoPlayNext) {
       return;
     }
@@ -102,7 +104,7 @@ function WatchPageContent() {
   useEffect(() => {
     const unsubscribe = subscribeToAudio((state) => {
       if (state.ended && state.currentTrack !== null) {
-        onSongEnded(state.currentTrack);
+        onSongEnded();
       }
     })
 
@@ -208,10 +210,18 @@ function WatchPageContent() {
   };
 
   useEffect(() => {
-    if (autoplay && song && globalAudioState.currentTrack !== song.id && offlineAssets?.songId === song.id) {
-      playTrack(offlineAssets.songUrl, song.id);
+    if (autoplay && song && globalAudioState.currentTrack?.id !== song.id && offlineAssets?.songId === song.id) {
+      playSong(offlineAssets.songUrl, song);
     }
   }, [song?.id, offlineAssets?.songUrl]);
+
+  useEffect(() => {
+    const ready = (offlineAssets && (offlineAssets.isOffline || globalAudioState.currentTrack?.id === song?.id && globalAudioState.currentTime > 0)) ?? false;
+    setAudioReady(ready);
+    if (ready) {
+      setVideoDownloading(false);
+    }
+  }, [offlineAssets?.isOffline, globalAudioState.currentTrack?.id, globalAudioState.currentTime, song?.id]);
 
   if (loading) {
     return (
@@ -258,7 +268,7 @@ function WatchPageContent() {
         <div className="w-full lg:w-2/3 space-y-4 pt-4">
           <div className="px-4 space-y-3">
             <div className="relative aspect-square md:aspect-video w-full bg-black rounded-lg overflow-hidden">
-              {offlineAssets && (offlineAssets.isOffline || autoplay || globalAudioState.currentTrack === song.id)
+              {audioReady
                 ? (
                   <>
                     <Image
@@ -269,7 +279,7 @@ function WatchPageContent() {
                     />
                     <PlayPauseOverlay isPaused={isPaused} triggerCount={triggerCount} />
                     <SongControls
-                      src={offlineAssets.songUrl}
+                      src={offlineAssets?.songUrl}
                       song={song}
                       className="w-full absolute bottom-0"
                     />
@@ -291,7 +301,10 @@ function WatchPageContent() {
                     ) : (
                       <div
                         className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity bg-black/30 flex flex-col items-center justify-center cursor-pointer"
-                        onClick={() => handlePlayPause()}
+                        onClick={() => {
+                          handlePlayPause();
+                          setVideoDownloading(true);
+                        }}
                       >
                         <div className="rounded-full p-2 bg-muted text-foreground">
                           <Play className="h-8 w-8 fill-current stroke-none" />
@@ -318,7 +331,7 @@ function WatchPageContent() {
                     {
                       label: "Remove from Playlist",
                       onClick: () => removeSongFromPlaylist(song.id),
-                      disabled: currentPlaylist?.find((s) => s.id === song.id) === undefined || globalAudioState.currentTrack === song.id
+                      disabled: currentPlaylist?.find((s) => s.id === song.id) === undefined || globalAudioState.currentTrack?.id === song.id
                     },
                   ]
                 }]} />
@@ -355,7 +368,7 @@ function WatchPageContent() {
         </div>
       </div>
 
-      {song.id !== globalAudioState.currentTrack && (
+      {song.id !== globalAudioState.currentTrack?.id && (
         <>
           <Separator orientation="horizontal" />
           <CurrentlyPlaying />

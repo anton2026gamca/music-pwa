@@ -88,7 +88,7 @@ export function SongPlaylist({ title, songs: mixedSongs, enableReorder = false, 
               ? (fetchedSongs.find((f) => f.id === raw) ?? null)
               : raw;
 
-            const isPlaying = song?.id === audioState.currentTrack;
+            const isPlaying = song?.id === audioState.currentTrack?.id;
             const progress = isPlaying ? (audioState.currentTime / audioState.duration) * 100 : undefined;
 
             if (!enableReorder) {

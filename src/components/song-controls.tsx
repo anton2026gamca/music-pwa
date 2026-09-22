@@ -15,21 +15,21 @@ interface SongControlsProps {
 }
 
 export function SongControls({ src = null, song = null, className = '' }: SongControlsProps) {
-  const { state, loadTrack, playTrack, togglePlay, seek, setVolume, subscribe } = useAudio();
+  const { state, loadSong: loadTrack, playSong: playTrack, togglePlay, seek, setVolume, subscribe } = useAudio();
 
   const [localTime, setLocalTime] = useState(0);
   const isUserScrubbing = useRef(false);
 
-  const songId = song?.id || null;
+  const songData = song;
 
   const currentTrack = state.currentTrack;
-  const isCurrent = src && songId ? currentTrack === songId : !!currentTrack;
+  const isCurrent = src && songData ? currentTrack?.id === songData.id : !!currentTrack;
 
   useEffect(() => {
-    if (src && songId && !state.currentTrack) {
-      loadTrack(src, songId);
+    if (src && songData && !state.currentTrack) {
+      loadTrack(src, songData);
     }
-  }, [src, songId, currentTrack, loadTrack]);
+  }, [src, songData, currentTrack, loadTrack]);
 
   useEffect(() => {
     const unsubscribe = subscribe((globalState: AudioState) => {
@@ -43,8 +43,8 @@ export function SongControls({ src = null, song = null, className = '' }: SongCo
   }, [subscribe, isCurrent]);
 
   const handlePlayPause = () => {
-    if (src && songId && state.currentTrack !== src) {
-      playTrack(src, songId);
+    if (src && songData && state.currentTrack?.id !== src) {
+      playTrack(src, songData);
     } else {
       togglePlay();
     }

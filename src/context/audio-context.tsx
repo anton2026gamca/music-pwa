@@ -1,9 +1,10 @@
 'use client';
 
+import { SongData } from '@/app/api/actions';
 import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
 
 export interface AudioState {
-  currentTrack: string | null;
+  currentTrack: SongData | null;
   isPlaying: boolean;
   currentTime: number;
   duration: number;
@@ -13,13 +14,15 @@ export interface AudioState {
 
 interface AudioContextType {
   state: AudioState;
-  loadTrack: (src: string, songId: string) => void;
-  playTrack: (src: string, songId: string) => void;
-  pauseTrack: () => void;
+  loadSong: (src: string, songData: SongData) => void;
+  playSong: (src: string, songData: SongData) => void;
+  pause: () => void;
   togglePlay: () => void;
   seek: (seconds: number) => void;
   setVolume: (level: number) => void;
   subscribe: (callback: (state: AudioState) => void) => () => void;
+  setNextHandler: (handler: (() => void) | null) => void;
+  setPrevHandler: (handler: (() => void) | null) => void;
 }
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
@@ -27,6 +30,9 @@ const AudioContext = createContext<AudioContextType | undefined>(undefined);
 export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const listenersRef = useRef<Set<(state: AudioState) => void>>(new Set());
+
+  const nextTrackHandlerRef = useRef<(() => void) | null>(null);
+  const prevTrackHandlerRef = useRef<(() => void) | null>(null);
 
   const [state, setState] = useState<AudioState>({
     currentTrack: null,
@@ -63,25 +69,61 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  const loadTrack = (src: string, songId: string) => {
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('mediaSession' in navigator) || !audioRef.current) return;
+
+    const audio = audioRef.current;
+
+    navigator.mediaSession.playbackState = state.isPlaying ? 'playing' : 'paused';
+
+    if (state.currentTrack) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: state.currentTrack.title,
+        artist: state.currentTrack.artistName,
+      });
+    }
+
+    if (state.duration > 0) {
+      navigator.mediaSession.setPositionState({
+        duration: state.duration,
+        playbackRate: audio.playbackRate || 1.0,
+        position: state.currentTime
+      });
+    }
+
+    navigator.mediaSession.setActionHandler('play', () => audio.play().catch(() => { }));
+    navigator.mediaSession.setActionHandler('pause', () => audio.pause());
+    navigator.mediaSession.setActionHandler('seekto', (details) => {
+      if (details.seekTime !== undefined) seek(details.seekTime);
+    });
+
+    navigator.mediaSession.setActionHandler('nexttrack', nextTrackHandlerRef.current ? () => nextTrackHandlerRef.current?.() : null);
+    navigator.mediaSession.setActionHandler('previoustrack', prevTrackHandlerRef.current ? () => prevTrackHandlerRef.current?.() : null);
+
+  }, [state.currentTrack, state.isPlaying, state.currentTime, state.duration]);
+
+  const setNextHandler = (handler: (() => void) | null) => { nextTrackHandlerRef.current = handler; };
+  const setPrevHandler = (handler: (() => void) | null) => { prevTrackHandlerRef.current = handler; };
+
+  const loadSong = (src: string, songData: SongData) => {
     if (!audioRef.current || !src) return;
     if (audioRef.current.src !== src) {
       audioRef.current.src = src;
       audioRef.current.load();
-      emitChange({ currentTrack: songId, currentTime: 0, duration: 0 });
+      emitChange({ currentTrack: songData, currentTime: 0, duration: 0 });
     }
   };
 
-  const playTrack = (src: string, songId: string) => {
+  const playSong = (src: string, songData: SongData) => {
     if (!audioRef.current) return;
     if (audioRef.current.src !== src && src) {
       audioRef.current.src = src;
     }
-    emitChange({ currentTrack: songId, isPlaying: true });
+    emitChange({ currentTrack: songData, isPlaying: true });
     audioRef.current.play().catch((err) => console.warn("Playback blocked:", err));
   };
 
-  const pauseTrack = () => {
+  const pause = () => {
     audioRef.current?.pause();
   };
 
@@ -123,7 +165,7 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AudioContext.Provider value={{ state, loadTrack, playTrack, pauseTrack, togglePlay, seek, setVolume, subscribe }}>
+    <AudioContext.Provider value={{ state, loadSong, playSong, pause, togglePlay, seek, setVolume, subscribe, setNextHandler, setPrevHandler }}>
       {children}
     </AudioContext.Provider>
   );
