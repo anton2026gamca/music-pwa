@@ -8,7 +8,7 @@ export interface SongData {
   title: string;
   thumbnailUrl: string;
   artistName: string;
-  duration?: number;
+  duration: number;
 }
 
 export async function searchSongs(query: string): Promise<SongData[]> {
@@ -22,7 +22,7 @@ export async function searchSongs(query: string): Promise<SongData[]> {
       id: song.videoId,
       title: song.name,
       thumbnailUrl: thumbnailUrl,
-      duration: song.duration ?? undefined,
+      duration: song.duration ?? -1,
       artistName: song.artist.name,
     };
   });
@@ -41,7 +41,7 @@ export async function getSongDetails(songId: string): Promise<SongData | null> {
       id: song.videoId,
       title: song.name,
       thumbnailUrl: thumbnailUrl,
-      duration: song.duration ?? undefined,
+      duration: song.duration,
       artistName: song.artist.name,
     };
   } catch (error) {

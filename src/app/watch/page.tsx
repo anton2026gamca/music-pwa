@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
-import { downloadLyricsAsset, downloadThumbnailAsset, downloadVideoAsset, getOfflineAssets, OfflineAssets, revokeBlobUrls } from "./_lib/download-utils";
+import { downloadLyricsAsset, downloadThumbnailAsset, downloadVideoAsset, fetchLyricsData, getOfflineAssets, OfflineAssets, revokeBlobUrls } from "./_lib/download-utils";
 import { OfflineStatus } from "./_components/offline-status";
 import { PlayPauseOverlay } from "./_components/play-pause-overlay";
 import { SongControls } from "@/components/song-controls";
@@ -23,6 +23,7 @@ import { usePlaylist } from "@/context/playlist-context";
 import { SongPlaylist } from "@/components/song-playlist";
 import { ThreeDotMenu } from "@/components/ui/three-dot-menu";
 import { SongData } from "../api/actions";
+import { LyricsPlayer } from "./_components/lyrics-player";
 
 function WatchPageContent() {
   const searchParams = useSearchParams();
@@ -68,6 +69,8 @@ function WatchPageContent() {
   const onAutoplayEnabledChanged = useCallback((enabled: boolean) => {
     setAutoPlayNext(enabled);
   }, []);
+
+  const [showLyrics, setShowLyrics] = useState(false);
 
   const handlePlayPause = () => {
     if (song && globalAudioState.currentTrack?.id !== song.id && offlineAssets) {
@@ -121,6 +124,10 @@ function WatchPageContent() {
 
     const loadMediaContext = async () => {
       const assets = await getOfflineAssets(song.id);
+
+      if (!assets.lyrics || assets.lyrics.length === 0) {
+        assets.lyrics = await fetchLyricsData(song.artistName, song.title, song.duration);
+      }
 
       setOfflineAssets(assets);
 
@@ -194,7 +201,7 @@ function WatchPageContent() {
 
       if (!offlineAssets.lyrics || offlineAssets.lyrics.length === 0) {
         setLyricsDownloading(true);
-        await downloadLyricsAsset(cache, song.id, song.artistName || "", song.title || "");
+        await downloadLyricsAsset(cache, song.id, song.artistName, song.title, song.duration);
         setLyricsDownloading(false);
       }
 
@@ -277,6 +284,9 @@ function WatchPageContent() {
                       loading="eager"
                       onClick={() => handlePlayPause()}
                     />
+                    {offlineAssets?.lyrics && globalAudioState.currentTrack?.id === song.id && (
+                      <LyricsPlayer lyrics={offlineAssets?.lyrics} visible={showLyrics} />
+                    )}
                     <PlayPauseOverlay isPaused={isPaused} triggerCount={triggerCount} />
                     <SongControls
                       src={offlineAssets?.songUrl}
@@ -315,26 +325,37 @@ function WatchPageContent() {
                 )}
             </div>
 
-            <div className="px-1 flex items-center text-nowrap gap-2">
-              <div className="flex-1 overflow-hidden">
+            <div className="px-1 flex items-center justify-between text-nowrap gap-2">
+              <div className="overflow-hidden">
                 <h2 className="text-xl font-semibold tracking-tight">{song.title}</h2>
                 <p className="text-sm text-muted-foreground">{song.artistName}</p>
               </div>
               <div>
-                <ThreeDotMenu groups={[{
-                  fields: [
-                    {
-                      label: "Add to Playlist",
-                      onClick: () => addSongToPlaylist(song),
-                      disabled: currentPlaylist?.find((s) => s.id === song.id) !== undefined
-                    },
-                    {
-                      label: "Remove from Playlist",
-                      onClick: () => removeSongFromPlaylist(song.id),
-                      disabled: currentPlaylist?.find((s) => s.id === song.id) === undefined || globalAudioState.currentTrack?.id === song.id
-                    },
-                  ]
-                }]} />
+                <ThreeDotMenu groups={[
+                  {
+                    fields: [
+                      {
+                        label: "Add to Playlist",
+                        onClick: () => addSongToPlaylist(song),
+                        disabled: currentPlaylist?.find((s) => s.id === song.id) !== undefined,
+                      },
+                      {
+                        label: "Remove from Playlist",
+                        onClick: () => removeSongFromPlaylist(song.id),
+                        disabled: currentPlaylist?.find((s) => s.id === song.id) === undefined || globalAudioState.currentTrack?.id === song.id,
+                      },
+                    ],
+                  },
+                  {
+                    fields: [
+                      {
+                        label: showLyrics ? "Hide Lyrics" : "Show Lyrics",
+                        onClick: () => setShowLyrics((prev) => !prev),
+                        disabled: !offlineAssets?.lyrics || offlineAssets.lyrics.length === 0 || globalAudioState.currentTrack?.id !== song.id,
+                      }
+                    ],
+                  },
+                ]} />
               </div>
             </div>
           </div>

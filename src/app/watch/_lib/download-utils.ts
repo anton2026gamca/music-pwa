@@ -95,10 +95,8 @@ export function parseLrcString(lrcText: string): Array<{ time: number; text: str
       const minutes = parseInt(match[1], 10);
       const seconds = parseInt(match[2], 10);
       const milliseconds = parseInt(match[3], 10);
-
       const timeInSeconds = minutes * 60 + seconds + milliseconds / 100;
       const text = line.replace(timeRegex, '').trim();
-
       result.push({ time: timeInSeconds, text });
     }
   }
@@ -135,9 +133,9 @@ export async function downloadThumbnailAsset(cache: Cache, songId: string, thumb
 /**
  * Fetches lyrics from LRCLIB and transforms them into a cacheable API response format.
  */
-export async function downloadLyricsAsset(cache: Cache, songId: string, artistName: string, title: string): Promise<void> {
+export async function downloadLyricsAsset(cache: Cache, songId: string, artistName: string, title: string, duration: number): Promise<void> {
   try {
-    const lrclibUrl = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artistName)}&track_name=${encodeURIComponent(title)}`;
+    const lrclibUrl = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artistName)}&track_name=${encodeURIComponent(title)}&duration=${duration}`;
     const response = await fetch(lrclibUrl);
 
     if (response.ok) {
@@ -151,4 +149,26 @@ export async function downloadLyricsAsset(cache: Cache, songId: string, artistNa
   } catch (err) {
     console.warn("LRCLIB matching lyrics not found or failed.", err);
   }
+}
+
+/**
+ * Fetches lyrics from LRCLIB using the word-by-word YAML format properties.
+ */
+export async function fetchLyricsData(artistName: string, title: string, duration?: number): Promise<Array<{ time: number; text: string }>> {
+  try {
+    const lrclibUrl = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artistName)}&track_name=${encodeURIComponent(title)}&duration=${duration}`;
+    const response = await fetch(lrclibUrl);
+
+    if (response.ok) {
+      const lyricsData = await response.json();
+
+      if (lyricsData.syncedLyrics) {
+        return parseLrcString(lyricsData.syncedLyrics);
+      }
+    }
+  } catch (err) {
+    console.warn("LRCLIB matching lyrics not found or failed.", err);
+  }
+
+  return [];
 }
