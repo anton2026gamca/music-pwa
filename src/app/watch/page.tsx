@@ -82,7 +82,6 @@ function WatchPageContent() {
       playSong(offlineAssets.songUrl, song);
     } else {
       togglePlay();
-      setTriggerCount(prev => prev + 1);
     }
   }
 
@@ -172,6 +171,7 @@ function WatchPageContent() {
       if (event.code === 'Space') {
         event.preventDefault();
         handlePlayPause();
+        setTriggerCount(prev => prev + 1);
       }
     };
 
@@ -298,18 +298,15 @@ function WatchPageContent() {
                       src={thumbnailUrl} alt={song.title} fill
                       className="object-cover"
                       loading="eager"
-                      onClick={() => handlePlayPause()}
+                      onClick={() => {
+                        handlePlayPause()
+                        setTriggerCount(prev => prev + 1);
+                      }}
                     />
                     {offlineAssets?.lyrics && offlineAssets.lyrics.length > 1 && globalAudioState.currentTrack?.id === song.id && (
                       <LyricsPlayer lyrics={offlineAssets?.lyrics} visible={showLyrics} />
                     )}
                     <PlayPauseOverlay isPaused={isPaused} triggerCount={triggerCount} />
-                    <SongControls
-                      src={offlineAssets?.songUrl}
-                      song={song}
-                      className="w-full absolute bottom-0 hidden lg:flex"
-                      handlePlayPause={handlePlayPause}
-                    />
                   </>
                 ) : (
                   <>
@@ -398,7 +395,7 @@ function WatchPageContent() {
 
           <Separator />
 
-          <div className="px-4 mb-4 lg:hidden space-y-4">
+          <div className="px-4 mb-4 space-y-4">
             <div className="flex items-center gap-2 overflow-auto scrollbar-none">
               <Button
                 disabled={offlineAssets?.isOffline || videoDownloading || lyricsDownloading || thumbnailDownloading}
@@ -412,16 +409,18 @@ function WatchPageContent() {
               >
                 <Text /> {!offlineAssets?.lyrics || offlineAssets.lyrics.length === 0 ? "No" : showLyrics && globalAudioState.currentTrack?.id === song.id ? "Hide" : "Show"} Lyrics
               </Button>
-              <Separator orientation="vertical" />
+              <Separator orientation="vertical" className="lg:hidden" />
               <Button
                 onClick={() => addSongToPlaylist(song)}
                 disabled={currentPlaylist?.find((s) => s.id === song.id) !== undefined}
+                className="lg:hidden"
               >
                 Add to Playlist
               </Button>
               <Button
                 onClick={() => removeSongFromPlaylist(song.id)}
                 disabled={currentPlaylist?.find((s) => s.id === song.id) === undefined || globalAudioState.currentTrack?.id === song.id}
+                className="lg:hidden"
               >
                 Remove from Playlist
               </Button>
@@ -429,7 +428,6 @@ function WatchPageContent() {
             <MobileSongControls
               src={offlineAssets?.songUrl}
               song={song}
-              className="lg:hidden"
               handlePlayPause={handlePlayPause}
               handleNext={playNextSong}
               handlePrevious={playPreviousSong}
