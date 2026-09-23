@@ -4,14 +4,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Loader2, AlertCircle, Play } from "lucide-react";
+import { Loader2, AlertCircle, Play, ArrowDownToLine, Check, X } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { downloadLyricsAsset, downloadThumbnailAsset, downloadVideoAsset, fetchLyricsData, getOfflineAssets, OfflineAssets, revokeBlobUrls } from "./_lib/download-utils";
-import { OfflineStatus } from "./_components/offline-status";
 import { PlayPauseOverlay } from "./_components/play-pause-overlay";
 import { SongControls } from "@/components/song-controls";
 import { useAudio } from "@/context/audio-context";
@@ -24,6 +23,7 @@ import { SongPlaylist } from "@/components/song-playlist";
 import { ThreeDotMenu } from "@/components/ui/three-dot-menu";
 import { SongData } from "../api/actions";
 import { LyricsPlayer } from "./_components/lyrics-player";
+import { Badge } from "@/components/ui/badge";
 
 function WatchPageContent() {
   const searchParams = useSearchParams();
@@ -330,7 +330,17 @@ function WatchPageContent() {
                 <h2 className="text-xl font-semibold tracking-tight">{song.title}</h2>
                 <p className="text-sm text-muted-foreground">{song.artistName}</p>
               </div>
-              <div>
+              <div className="flex items-center gap-2">
+                {offlineAssets?.isOffline && (
+                  <Badge><ArrowDownToLine />Downloaded</Badge>
+                )}
+
+                {offlineAssets?.lyrics && offlineAssets.lyrics.length > 1 ? (
+                  <Badge><Check />Lyrics</Badge>
+                ) : (
+                  <Badge className="bg-red-400"><X />Lyrics</Badge>
+                )}
+
                 <ThreeDotMenu groups={[
                   {
                     fields: [
@@ -355,6 +365,15 @@ function WatchPageContent() {
                       }
                     ],
                   },
+                  {
+                    fields: [
+                      {
+                        label: "Download",
+                        onClick: () => handleDownload(),
+                        disabled: offlineAssets?.isOffline || videoDownloading || lyricsDownloading || thumbnailDownloading,
+                      }
+                    ],
+                  },
                 ]} />
               </div>
             </div>
@@ -363,15 +382,6 @@ function WatchPageContent() {
           <Separator />
 
           <div className="px-4 mb-4">
-            {offlineAssets && (
-              <OfflineStatus
-                offlineAssets={offlineAssets}
-                videoDownloading={videoDownloading}
-                lyricsDownloading={lyricsDownloading}
-                thumbnailDownloading={thumbnailDownloading}
-                onDownloadClick={() => handleDownload()}
-              />
-            )}
           </div>
         </div>
 
