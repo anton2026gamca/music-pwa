@@ -19,19 +19,32 @@ export function LyricsPlayer({ lyrics, visible }: LyricsPlayerProps) {
   }, [lyrics]);
 
   const activeIndex = useMemo(() => {
+    if (!visible) {
+      return -1;
+    }
     for (let i = sortedLyrics.length - 1; i >= 0; i--) {
       if (sortedLyrics[i].time <= currentTime) {
         return i;
       }
     }
     return -1;
-  }, [sortedLyrics, state.currentTime]);
+  }, [sortedLyrics, currentTime, visible]);
 
   useEffect(() => {
-    if (activeIndex !== -1 && lyricRefs.current[activeIndex]) {
-      lyricRefs.current[activeIndex]?.scrollIntoView({
+    const container = containerRef.current;
+    const activeElement = lyricRefs.current[activeIndex];
+
+    if (activeIndex !== -1 && activeElement && container) {
+      const containerRect = container.getBoundingClientRect();
+      const elementRect = activeElement.getBoundingClientRect();
+
+      const relativeTop = elementRect.top - containerRect.top + container.scrollTop;
+
+      const targetScrollTop = relativeTop - containerRect.height / 2 + elementRect.height / 2;
+
+      container.scrollTo({
+        top: targetScrollTop,
         behavior: 'smooth',
-        block: 'center',
       });
     }
   }, [activeIndex]);
