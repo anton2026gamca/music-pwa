@@ -4,10 +4,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Loader2, AlertCircle, Play, ArrowDownToLine, Check, X } from "lucide-react";
+import { Loader2, AlertCircle, Play, ArrowDownToLine, Check, X, Text } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { downloadLyricsAsset, downloadThumbnailAsset, downloadVideoAsset, fetchLyricsData, getOfflineAssets, OfflineAssets, revokeBlobUrls } from "./_lib/download-utils";
@@ -24,6 +24,7 @@ import { ThreeDotMenu } from "@/components/ui/three-dot-menu";
 import { SongData } from "../api/actions";
 import { LyricsPlayer } from "./_components/lyrics-player";
 import { Badge } from "@/components/ui/badge";
+import { MobileSongControls } from "@/components/mobile-song-controls";
 
 function WatchPageContent() {
   const searchParams = useSearchParams();
@@ -57,7 +58,8 @@ function WatchPageContent() {
   const {
     playlist: currentPlaylist,
     setPlaylist: setCurrentPlaylist,
-    nextSong: playNextSong,
+    nextSong: getNextSong,
+    prevSong: getPreviousSong,
     initializeQueue: initializePlayNextQueue,
     initialized: playNextQueueInitialized,
     addSong: addSongToPlaylist,
@@ -84,19 +86,33 @@ function WatchPageContent() {
     }
   }
 
-  const onSongEnded = useCallback(() => {
-    if (!autoPlayNext) {
-      return;
-    }
-
-    const nextSong = playNextSong();
+  const playNextSong = () => {
+    const nextSong = getNextSong();
     if (nextSong === null) {
       return;
     }
 
     sessionStorage.setItem(`song_${nextSong.id}`, JSON.stringify(nextSong))
     router.push(`/watch?id=${encodeURIComponent(nextSong.id)}&autoplay=1`)
-  }, [autoPlayNext, playNextSong]);
+  }
+
+  const playPreviousSong = () => {
+    const prevSong = getPreviousSong();
+    if (prevSong === null) {
+      return;
+    }
+
+    sessionStorage.setItem(`song_${prevSong.id}`, JSON.stringify(prevSong))
+    router.push(`/watch?id=${encodeURIComponent(prevSong.id)}&autoplay=1`)
+  }
+
+  const onSongEnded = useCallback(() => {
+    if (!autoPlayNext) {
+      return;
+    }
+
+    playNextSong();
+  }, [autoPlayNext, getNextSong]);
 
   useEffect(() => {
     if (!playNextQueueInitialized && song !== null) {
@@ -284,14 +300,15 @@ function WatchPageContent() {
                       loading="eager"
                       onClick={() => handlePlayPause()}
                     />
-                    {offlineAssets?.lyrics && globalAudioState.currentTrack?.id === song.id && (
+                    {offlineAssets?.lyrics && offlineAssets.lyrics.length > 1 && globalAudioState.currentTrack?.id === song.id && (
                       <LyricsPlayer lyrics={offlineAssets?.lyrics} visible={showLyrics} />
                     )}
                     <PlayPauseOverlay isPaused={isPaused} triggerCount={triggerCount} />
                     <SongControls
                       src={offlineAssets?.songUrl}
                       song={song}
-                      className="w-full absolute bottom-0"
+                      className="w-full absolute bottom-0 hidden lg:flex"
+                      handlePlayPause={handlePlayPause}
                     />
                   </>
                 ) : (
@@ -381,7 +398,42 @@ function WatchPageContent() {
 
           <Separator />
 
-          <div className="px-4 mb-4">
+          <div className="px-4 mb-4 lg:hidden space-y-4">
+            <div className="flex items-center gap-2 overflow-auto scrollbar-none">
+              <Button
+                disabled={offlineAssets?.isOffline || videoDownloading || lyricsDownloading || thumbnailDownloading}
+                onClick={() => handleDownload()}
+              >
+                <ArrowDownToLine /> Download
+              </Button>
+              <Button
+                onClick={() => setShowLyrics((prev) => !prev)}
+                disabled={!offlineAssets?.lyrics || offlineAssets.lyrics.length === 0 || globalAudioState.currentTrack?.id !== song.id}
+              >
+                <Text /> {!offlineAssets?.lyrics || offlineAssets.lyrics.length === 0 ? "No" : showLyrics && globalAudioState.currentTrack?.id === song.id ? "Hide" : "Show"} Lyrics
+              </Button>
+              <Separator orientation="vertical" />
+              <Button
+                onClick={() => addSongToPlaylist(song)}
+                disabled={currentPlaylist?.find((s) => s.id === song.id) !== undefined}
+              >
+                Add to Playlist
+              </Button>
+              <Button
+                onClick={() => removeSongFromPlaylist(song.id)}
+                disabled={currentPlaylist?.find((s) => s.id === song.id) === undefined || globalAudioState.currentTrack?.id === song.id}
+              >
+                Remove from Playlist
+              </Button>
+            </div>
+            <MobileSongControls
+              src={offlineAssets?.songUrl}
+              song={song}
+              className="lg:hidden"
+              handlePlayPause={handlePlayPause}
+              handleNext={playNextSong}
+              handlePrevious={playPreviousSong}
+            />
           </div>
         </div>
 

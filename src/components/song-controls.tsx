@@ -4,7 +4,7 @@ import { SongData } from '@/app/api/actions';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { useAudio, AudioState } from '@/context/audio-context';
-import { formatDuration } from '@/lib/utils';
+import { cn, formatDuration } from '@/lib/utils';
 import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -12,10 +12,11 @@ interface SongControlsProps {
   src?: string | null;
   song?: SongData | null;
   className?: string;
+  handlePlayPause: () => void;
 }
 
-export function SongControls({ src = null, song = null, className = '' }: SongControlsProps) {
-  const { state, loadSong: loadTrack, playSong: playTrack, togglePlay, seek, setVolume, subscribe } = useAudio();
+export function SongControls({ src = null, song = null, className = '', handlePlayPause }: SongControlsProps) {
+  const { state, loadSong, seek, setVolume, subscribe } = useAudio();
 
   const [localTime, setLocalTime] = useState(0);
   const isUserScrubbing = useRef(false);
@@ -27,9 +28,9 @@ export function SongControls({ src = null, song = null, className = '' }: SongCo
 
   useEffect(() => {
     if (src && songData && !state.currentTrack) {
-      loadTrack(src, songData);
+      loadSong(src, songData);
     }
-  }, [src, songData, currentTrack, loadTrack]);
+  }, [src, songData, currentTrack, loadSong]);
 
   useEffect(() => {
     const unsubscribe = subscribe((globalState: AudioState) => {
@@ -41,14 +42,6 @@ export function SongControls({ src = null, song = null, className = '' }: SongCo
     });
     return () => unsubscribe();
   }, [subscribe, isCurrent]);
-
-  const handlePlayPause = () => {
-    if (src && songData && state.currentTrack?.id !== src) {
-      playTrack(src, songData);
-    } else {
-      togglePlay();
-    }
-  };
 
   const extractValue = (val: number | readonly number[]): number => {
     if (Array.isArray(val)) return val[0] || 0;
@@ -68,7 +61,7 @@ export function SongControls({ src = null, song = null, className = '' }: SongCo
   };
 
   return (
-    <div className={`flex items-center gap-3 w-full h-10 px-3 bg-[#1a1a1a]/95 text-[#f9f9fb] antialiased select-none ${className}`}>
+    <div className={cn("flex items-center gap-3 w-full h-10 px-3 bg-[#1a1a1a]/95 text-[#f9f9fb] antialiased select-none", className)}>
       <Button
         variant="ghost"
         size="icon"
@@ -96,7 +89,7 @@ export function SongControls({ src = null, song = null, className = '' }: SongCo
         disabled={!isCurrent && !!src}
         onValueCommitted={handleTimelineCommit}
         onValueChange={handleTimelineChange}
-        className="flex-1 cursor-pointer py-3"
+        className="flex-1"
       />
 
       <Button
@@ -115,7 +108,7 @@ export function SongControls({ src = null, song = null, className = '' }: SongCo
         step={0.05}
         value={state.volume}
         onValueChange={(val) => setVolume(extractValue(val))}
-        className="w-16! md:w-20! cursor-pointer py-3 shrink-0"
+        className="w-16! md:w-20!"
       />
     </div>
   );
