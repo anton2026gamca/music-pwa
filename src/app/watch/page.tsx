@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Loader2, AlertCircle, Play, ArrowDownToLine, Check, X, Text } from "lucide-react";
+import { Loader2, AlertCircle, Play, ArrowDownToLine, Check, X, Text, WifiOff } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -12,7 +12,6 @@ import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { downloadLyricsAsset, downloadThumbnailAsset, downloadVideoAsset, fetchLyricsData, getOfflineAssets, OfflineAssets, revokeBlobUrls } from "./_lib/download-utils";
 import { PlayPauseOverlay } from "./_components/play-pause-overlay";
-import { SongControls } from "@/components/song-controls";
 import { useAudio } from "@/context/audio-context";
 import { useFetchSongData } from "@/hooks/use-fetch-song-data";
 import { CurrentlyPlaying } from "@/components/currently-playing";
@@ -25,6 +24,7 @@ import { SongData } from "../api/actions";
 import { LyricsPlayer } from "./_components/lyrics-player";
 import { Badge } from "@/components/ui/badge";
 import { MobileSongControls } from "@/components/mobile-song-controls";
+import { useOnline } from "@/hooks/use-online";
 
 function WatchPageContent() {
   const searchParams = useSearchParams();
@@ -32,6 +32,8 @@ function WatchPageContent() {
 
   const songIdParam = searchParams.get("id");
   const autoplay = ["true", "1"].includes(searchParams.get("autoplay") ?? "false");
+
+  const online = useOnline();
 
   const { song, loading, error: songError } = useFetchSongData(songIdParam);
   const [error, setError] = useState<string | null>(null);
@@ -268,6 +270,16 @@ function WatchPageContent() {
     );
   }
 
+  if (!online && (!offlineAssets?.isOffline || !song)) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center bg-background">
+        <WifiOff className="h-10 w-10 text-destructive mb-3" />
+        <h2 className="text-lg font-semibold tracking-tight">No internet connection</h2>
+        <p className="text-sm text-muted-foreground mb-4">Please connect to the internet.</p>
+      </div>
+    );
+  }
+
   if (error || songError || !song) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center bg-background">
@@ -350,7 +362,7 @@ function WatchPageContent() {
                 )}
 
                 {offlineAssets?.lyrics && offlineAssets.lyrics.length > 1 ? (
-                  <Badge><Check />Lyrics</Badge>
+                  <Badge className="bg-green-400"><Check />Lyrics</Badge>
                 ) : (
                   <Badge className="bg-red-400"><X />Lyrics</Badge>
                 )}

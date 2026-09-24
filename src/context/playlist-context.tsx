@@ -4,6 +4,7 @@ import { getPlayNextSuggestions, SongData } from '@/app/api/actions';
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { useAudio } from './audio-context';
 import { useRouter } from 'next/navigation';
+import { useOnline } from '@/hooks/use-online';
 
 interface PlayNextContextType {
   initialized: boolean;
@@ -31,17 +32,21 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
   const { state: { currentTrack: currentSongId }, setNextHandler, setPrevHandler } = useAudio();
   const router = useRouter();
 
+  const online = useOnline();
+
   const initializeQueue = useCallback(async (currentSong: SongData, reset: boolean = false) => {
     if (currentSong.id === currentSongId?.id) return;
 
     setLoading(true);
 
     try {
-      const suggestions = await getPlayNextSuggestions(currentSong.id);
-
       if (reset || !playlist || playlist.length === 0) {
         setPlaylist([currentSong]);
       }
+
+      if (!online) return;
+
+      const suggestions = await getPlayNextSuggestions(currentSong.id);
 
       setPlayNextList((prev) => {
         return reset || !prev

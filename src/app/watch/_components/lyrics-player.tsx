@@ -1,5 +1,5 @@
 import { useAudio } from '@/context/audio-context';
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 interface LyricsPlayerProps {
   lyrics: Array<{ time: number; text: string }>;

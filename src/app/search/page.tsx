@@ -4,13 +4,13 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { searchSongs, SongData } from '@/app/api/actions';
 import { SongItem } from '@/components/song-item';
-import { Loader2, Music4, SearchX } from "lucide-react";
+import { Loader2, Music4, SearchX, WifiOff } from "lucide-react";
 import dynamic from 'next/dynamic';
 
-// shadcn/ui (Base UI engine) variants 
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from '@/components/ui/separator';
 import { CurrentlyPlaying } from '@/components/currently-playing';
+import { useOnline } from '@/hooks/use-online';
 
 const SearchBar = dynamic(() => import('@/components/search/search-bar'), { ssr: false });
 
@@ -22,6 +22,8 @@ function SearchPageContent() {
   const [songs, setSongs] = useState<SongData[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+
+  const online = useOnline();
 
   useEffect(() => {
     if (!targetQuery) return;
@@ -97,17 +99,31 @@ function SearchPageContent() {
               </div>
             ) : (
               hasSearched && (
-                <Card className="max-w-sm mx-auto border-dashed shadow-none">
-                  <CardContent className="flex flex-col items-center justify-center py-12 text-center space-y-3">
-                    <div className="p-3 bg-muted rounded-full text-muted-foreground">
-                      <SearchX className="h-6 w-6" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="font-semibold text-sm tracking-tight">No search results</p>
-                      <p className="text-xs text-muted-foreground">Try searching for something else</p>
-                    </div>
-                  </CardContent>
-                </Card>
+                online ? (
+                  <Card className="max-w-sm mx-auto border-dashed shadow-none">
+                    <CardContent className="flex flex-col items-center justify-center py-12 text-center space-y-3">
+                      <div className="p-3 bg-muted rounded-full text-muted-foreground">
+                        <SearchX className="h-6 w-6" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="font-semibold text-sm tracking-tight">No search results</p>
+                        <p className="text-xs text-muted-foreground">Try searching for something else</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card className="max-w-sm mx-auto border-dashed shadow-none">
+                    <CardContent className="flex flex-col items-center justify-center py-12 text-center space-y-3">
+                      <div className="p-3 bg-muted rounded-full text-muted-foreground">
+                        <WifiOff className="h-6 w-6" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="font-semibold text-sm tracking-tight">No search results</p>
+                        <p className="text-xs text-muted-foreground">Try connecting to the internet</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
               )
             )
           )}
