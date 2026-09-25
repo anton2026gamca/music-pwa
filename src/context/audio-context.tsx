@@ -43,14 +43,17 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
   });
 
   const emitChange = (updates: Partial<AudioState> = {}) => {
-    setState((prev) => {
-      const nextState = { ...prev, ...updates };
-      setTimeout(() => {
-        listenersRef.current.forEach((callback) => callback(nextState));
-      }, 0);
-      return { ...nextState, ended: false };
-    });
+    setState((prev) => ({ ...prev, ended: false, ...updates }));
   };
+
+  useEffect(() => {
+    if (state.ended) {
+      console.log("Song ended: ", state);
+      console.log("Listeners count:", listenersRef.current.size);
+    }
+
+    listenersRef.current.forEach((callback) => callback(state));
+  }, [state]);
 
   useEffect(() => {
     const audio = new Audio();
