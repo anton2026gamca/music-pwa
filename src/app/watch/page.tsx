@@ -35,7 +35,8 @@ function WatchPageContent() {
 
   const online = useOnline();
 
-  const { song, loading, error: songError } = useFetchSongData(songIdParam);
+  const { song, loading: songLoading, error: songError } = useFetchSongData(songIdParam);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [audioReady, setAudioReady] = useState(false);
@@ -154,6 +155,8 @@ function WatchPageContent() {
       if (!assets.isOffline && isSongDownloaded(song.id)) {
         removeDownloadedSong(song.id);
       }
+
+      setLoading(false);
     };
 
     loadMediaContext();
@@ -248,7 +251,7 @@ function WatchPageContent() {
     }
   }, [offlineAssets?.isOffline, globalAudioState.currentTrack?.id, globalAudioState.currentTime, song?.id]);
 
-  if (loading) {
+  if (loading || songLoading) {
     return (
       <div className="flex flex-col lg:flex-row w-full min-h-screen mx-auto items-stretch lg:max-h-screen">
         <div className="w-full lg:w-2/3 space-y-3 p-4">
