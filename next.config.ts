@@ -12,6 +12,7 @@ const withSerwist = withSerwistInit({
 });
 
 export default withSerwist({
+  serverExternalPackages: ['ffmpeg-static'],
   images: {
     remotePatterns: [
       new URL('https://i.ytimg.com/vi/**'),

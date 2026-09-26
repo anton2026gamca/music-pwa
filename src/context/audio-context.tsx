@@ -44,19 +44,19 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
 
   const emitChange = (updates: Partial<AudioState> = {}) => {
     setState((prev) => ({ ...prev, ended: false, ...updates }));
+    if (updates.currentTime === undefined || updates.isPlaying !== undefined) {
+      console.log(updates);
+    }
   };
 
   useEffect(() => {
-    if (state.ended) {
-      console.log("Song ended: ", state);
-      console.log("Listeners count:", listenersRef.current.size);
-    }
-
     listenersRef.current.forEach((callback) => callback(state));
   }, [state]);
 
   useEffect(() => {
     const audio = new Audio();
+    audio.style.display = "none";
+    document.body.appendChild(audio);
     audioRef.current = audio;
 
     audio.onplay = () => emitChange({ isPlaying: true });
@@ -68,42 +68,48 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
 
     return () => {
       audio.pause();
+      audio.remove();
       audioRef.current = null;
     };
   }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !('mediaSession' in navigator) || !audioRef.current) return;
-
-    const audio = audioRef.current;
-
-    navigator.mediaSession.playbackState = state.isPlaying ? 'playing' : 'paused';
-
-    if (state.currentTrack) {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: state.currentTrack.title,
-        artist: state.currentTrack.artistName,
-      });
-    }
-
-    if (state.duration > 0) {
-      navigator.mediaSession.setPositionState({
-        duration: state.duration,
-        playbackRate: audio.playbackRate || 1.0,
-        position: state.currentTime
-      });
-    }
-
-    navigator.mediaSession.setActionHandler('play', () => audio.play().catch(() => { }));
-    navigator.mediaSession.setActionHandler('pause', () => audio.pause());
-    navigator.mediaSession.setActionHandler('seekto', (details) => {
-      if (details.seekTime !== undefined) seek(details.seekTime);
+    if (!('mediaSession' in navigator) || !state.currentTrack) return;
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: state.currentTrack.title,
+      artist: state.currentTrack.artistName,
     });
-
+    navigator.mediaSession.setActionHandler('play', () => audioRef.current?.play().catch(() => { }));
+    navigator.mediaSession.setActionHandler('pause', () => audioRef.current?.pause());
+    navigator.mediaSession.setActionHandler('seekto', (d) => { if (d.seekTime !== undefined) seek(d.seekTime); });
     navigator.mediaSession.setActionHandler('nexttrack', nextTrackHandlerRef.current ? () => nextTrackHandlerRef.current?.() : null);
     navigator.mediaSession.setActionHandler('previoustrack', prevTrackHandlerRef.current ? () => prevTrackHandlerRef.current?.() : null);
+    navigator.mediaSession.setActionHandler('stop', () => { audioRef.current?.pause(); });
+  }, [state.currentTrack]);
 
-  }, [state.currentTrack, state.isPlaying, state.currentTime, state.duration]);
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    navigator.mediaSession.playbackState = state.isPlaying ? 'playing' : 'paused';
+  }, [state.isPlaying]);
+
+  useEffect(() => {
+    if (!('mediaSession' in navigator) || !audioRef.current || state.duration <= 0) return;
+    const id = setInterval(() => {
+      const audio = audioRef.current;
+      if (!audio || audio.paused) return;
+
+      const { duration, currentTime, playbackRate } = audio;
+      if (!Number.isFinite(duration) || duration <= 0) return;
+      if (!Number.isFinite(currentTime)) return;
+
+      navigator.mediaSession.setPositionState({
+        duration,
+        playbackRate: Number.isFinite(playbackRate) && playbackRate > 0 ? playbackRate : 1,
+        position: Math.min(currentTime, duration), // position must not exceed duration, or this also throws
+      });
+    }, 500);
+    return () => clearInterval(id);
+  }, [state.duration]);
 
   const setNextHandler = (handler: (() => void) | null) => { nextTrackHandlerRef.current = handler; };
   const setPrevHandler = (handler: (() => void) | null) => { prevTrackHandlerRef.current = handler; };
@@ -122,6 +128,7 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
     if (audioRef.current.src !== src && src) {
       audioRef.current.src = src;
     }
+    console.log("Playing song:", songData.title, "from src:", src);
     emitChange({ currentTrack: songData, isPlaying: true });
     audioRef.current.play().catch((err) => console.warn("Playback blocked:", err));
   };

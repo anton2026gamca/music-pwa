@@ -441,7 +441,6 @@ function WatchPageContent() {
               </Button>
             </div>
             <MobileSongControls
-              src={offlineAssets?.songUrl}
               song={song}
               handlePlayPause={handlePlayPause}
               handleNext={playNextSong}

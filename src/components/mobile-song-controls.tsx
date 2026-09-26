@@ -9,7 +9,6 @@ import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface MobileSongControlsProps {
-  src?: string | null;
   song?: SongData | null;
   className?: string;
   handlePlayPause: () => void;
@@ -18,27 +17,19 @@ interface MobileSongControlsProps {
 }
 
 export function MobileSongControls({
-  src = null,
   song = null,
   className = '',
   handlePlayPause,
   handleNext,
   handlePrevious
 }: MobileSongControlsProps) {
-  const { state, loadSong, seek, subscribe } = useAudio();
+  const { state, seek, subscribe } = useAudio();
 
   const [localTime, setLocalTime] = useState(0);
   const isUserScrubbing = useRef(false);
 
-  const songData = song;
   const currentTrack = state.currentTrack;
-  const isCurrent = src && songData ? currentTrack?.id === songData.id : !!currentTrack;
-
-  useEffect(() => {
-    if (src && songData && !state.currentTrack) {
-      loadSong(src, songData);
-    }
-  }, [src, songData, currentTrack, loadSong]);
+  const isCurrent = song ? currentTrack?.id === song.id : !!currentTrack;
 
   useEffect(() => {
     const unsubscribe = subscribe((globalState: AudioState) => {
@@ -75,7 +66,7 @@ export function MobileSongControls({
           min={0}
           max={isCurrent ? state.duration || 100 : 100}
           value={isCurrent ? localTime : 0}
-          disabled={!isCurrent && !!src}
+          disabled={!isCurrent}
           onValueCommitted={handleTimelineCommit}
           onValueChange={handleTimelineChange}
           className="w-full cursor-pointer touch-none"
