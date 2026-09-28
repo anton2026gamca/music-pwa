@@ -28,8 +28,7 @@ export function MobileSongControls({
   const [localTime, setLocalTime] = useState(0);
   const isUserScrubbing = useRef(false);
 
-  const currentTrack = state.currentTrack;
-  const isCurrent = song ? currentTrack?.id === song.id : !!currentTrack;
+  const isCurrent = song ? state.currentSong?.id === song.id : !!state.currentSong;
 
   useEffect(() => {
     const unsubscribe = subscribe((globalState: AudioState) => {
@@ -83,7 +82,7 @@ export function MobileSongControls({
           variant="ghost"
           size="icon"
           type="button"
-          onClick={handlePrevious}
+          onClick={() => handlePrevious()}
           className="size-12 text-white hover:bg-white/10 active:bg-white/20 rounded-full transition-colors"
         >
           <SkipBack className="size-6 fill-current stroke-3" />
@@ -93,7 +92,7 @@ export function MobileSongControls({
           variant="ghost"
           size="icon"
           type="button"
-          onClick={handlePlayPause}
+          onClick={() => handlePlayPause()}
           className="size-16 bg-white text-black hover:bg-white/90 active:scale-95 rounded-full shadow-lg transition-all flex items-center justify-center"
         >
           {isCurrent && state.isPlaying ? (
@@ -107,7 +106,7 @@ export function MobileSongControls({
           variant="ghost"
           size="icon"
           type="button"
-          onClick={handleNext}
+          onClick={() => handleNext()}
           className="size-12 text-white hover:bg-white/10 active:bg-white/20 rounded-full transition-colors"
         >
           <SkipForward className="size-6 fill-current stroke-3" />

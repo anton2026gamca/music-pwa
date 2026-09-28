@@ -7,7 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { formatDuration } from '@/lib/utils';
 import { memo, useEffect, useState } from 'react';
-import { getOfflineAssets, OfflineAssets, revokeBlobUrls } from '@/app/watch/_lib/download-utils';
+import { getOfflineAssets, OfflineAssets, revokeBlobUrls } from '@/lib/download-utils';
 import { Skeleton } from './ui/skeleton';
 
 interface SongItemProps {

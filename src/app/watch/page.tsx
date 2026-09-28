@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, Suspense, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Loader2, AlertCircle, Play, ArrowDownToLine, Check, X, Text, WifiOff } from "lucide-react";
@@ -10,12 +10,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
-import { downloadLyricsAsset, downloadThumbnailAsset, downloadVideoAsset, fetchLyricsData, getOfflineAssets, OfflineAssets, revokeBlobUrls } from "./_lib/download-utils";
 import { PlayPauseOverlay } from "./_components/play-pause-overlay";
 import { useAudio } from "@/context/audio-context";
 import { useFetchSongData } from "@/hooks/use-fetch-song-data";
 import { CurrentlyPlaying } from "@/components/currently-playing";
-import { useDownloadedSongs } from "@/hooks/use-downloaded-songs";
 import { PlayNextList } from "@/components/play-next-list";
 import { usePlaylist } from "@/context/playlist-context";
 import { SongPlaylist } from "@/components/song-playlist";
@@ -25,146 +23,98 @@ import { LyricsPlayer } from "./_components/lyrics-player";
 import { Badge } from "@/components/ui/badge";
 import { MobileSongControls } from "@/components/mobile-song-controls";
 import { useOnline } from "@/hooks/use-online";
+import { useOfflineAssets } from "@/hooks/use-offline-assets";
+import { OfflineAssets, revokeBlobUrls } from "@/lib/download-utils";
 
 function WatchPageContent() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-
-  const songIdParam = searchParams.get("id");
-  const autoplay = ["true", "1"].includes(searchParams.get("autoplay") ?? "false");
-
   const online = useOnline();
 
+  const searchParams = useSearchParams();
+  const songIdParam = searchParams.get("id");
   const { song, loading: songLoading, error: songError } = useFetchSongData(songIdParam);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const [audioReady, setAudioReady] = useState(false);
-
-  const [videoDownloading, setVideoDownloading] = useState(false);
-  const [lyricsDownloading, setLyricsDownloading] = useState(false);
-  const [thumbnailDownloading, setThumbnailDownloading] = useState(false);
-
-  const [offlineAssets, setOfflineAssets] = useState<OfflineAssets | null>(null);
-  const thumbnailUrl = offlineAssets?.thumbnailUrl ?? song?.thumbnailUrl ?? '';
-
-  const { state: globalAudioState, togglePlay, playSong, subscribe: subscribeToAudio } = useAudio();
-  const isPaused = !globalAudioState.isPlaying;
-  const [triggerCount, setTriggerCount] = useState(0);
 
   const {
-    addSong: addDownloadedSong,
-    removeSong: removeDownloadedSong,
-    includesSong: isSongDownloaded
-  } = useDownloadedSongs();
+    loading: offlineAssetsLoading,
+    error: offlineAssetsError,
+    loadAssets: loadOfflineAssets,
+    download: downloadOfflineAssets,
+    videoDownloading,
+    setVideoDownloading,
+    lyricsDownloading,
+    thumbnailDownloading,
+  } = useOfflineAssets();
+  const thumbnailUrl = song?.thumbnailUrl ?? '';
+
+  const { state: globalAudioState, togglePlay } = useAudio();
+  const isPaused = !globalAudioState.isPlaying;
+  const [playPauseTriggerCount, setPlayPauseTriggerCount] = useState(0);
 
   const {
     playlist: currentPlaylist,
     setPlaylist: setCurrentPlaylist,
-    nextSong: getNextSong,
-    prevSong: getPreviousSong,
+    playNextSong,
+    playPrevSong,
     initializeQueue: initializePlayNextQueue,
-    initialized: playNextQueueInitialized,
     addSong: addSongToPlaylist,
-    removeSong: removeSongFromPlaylist
+    removeSong: removeSongFromPlaylist,
+    offlineAssets: playlistOfflineAssets,
   } = usePlaylist();
+  const [loadedOfflineAssets, setLoadedOfflineAssets] = useState<OfflineAssets | null>(null);
+  const offlineAssets = loadedOfflineAssets ?? playlistOfflineAssets;
 
-  const [autoPlayNext, setAutoPlayNext] = useState(true);
-
-  const onAutoplayEnabledChanged = useCallback((enabled: boolean) => {
-    setAutoPlayNext(enabled);
-  }, []);
+  const [audioReady, setAudioReady] = useState(false);
 
   const [showLyrics, setShowLyrics] = useState(false);
 
+  const loading = songLoading || offlineAssetsLoading;
+  const error = songError ?? offlineAssetsError;
+
+  useEffect(() => {
+    let songUrl: string | null = null;
+    let thumbnailUrl: string | null = null;
+
+    const load = async () => {
+      if (!song?.id) return;
+
+      if (playlistOfflineAssets?.songId === song.id) {
+        console.log(`[watch/page] Using playlist offline assets for song: ${song?.title} by ${song?.artistName}`);
+        setLoadedOfflineAssets(playlistOfflineAssets);
+      } else {
+        console.log(`[watch/page] Loading offline assets for song: ${song?.title} by ${song?.artistName}`);
+
+        const assets = await loadOfflineAssets(song);
+
+        songUrl = assets?.songUrl ?? null;
+        thumbnailUrl = assets?.thumbnailUrl ?? null;
+
+        setLoadedOfflineAssets(assets);
+      }
+    }
+    load();
+
+    return () => {
+      revokeBlobUrls(songUrl, thumbnailUrl);
+      setLoadedOfflineAssets(null);
+    }
+  }, [song?.id]);
+
+  const handleDownload = async (song: SongData) => {
+    await downloadOfflineAssets(song);
+
+    const assets = await loadOfflineAssets(song);
+    setLoadedOfflineAssets(assets);
+  }
+
   const handlePlayPause = () => {
-    if (song && globalAudioState.currentTrack?.id !== song.id && offlineAssets) {
-      if (!currentPlaylist?.find((s) => s.id === song.id)) {
+    if (song && globalAudioState.currentSong?.id !== song.id) {
+      if (currentPlaylist?.find((s) => s.id === song.id) === undefined) {
         initializePlayNextQueue(song, true);
       }
-      playSong(offlineAssets.songUrl, song);
+      playNextSong(song);
     } else {
       togglePlay();
     }
   }
-
-  const playNextSong = () => {
-    const nextSong = getNextSong();
-    if (nextSong === null) {
-      return;
-    }
-
-    sessionStorage.setItem(`song_${nextSong.id}`, JSON.stringify(nextSong))
-    router.push(`/watch?id=${encodeURIComponent(nextSong.id)}&autoplay=1`)
-  }
-
-  const playPreviousSong = () => {
-    const prevSong = getPreviousSong();
-    if (prevSong === null) {
-      return;
-    }
-
-    sessionStorage.setItem(`song_${prevSong.id}`, JSON.stringify(prevSong))
-    router.push(`/watch?id=${encodeURIComponent(prevSong.id)}&autoplay=1`)
-  }
-
-  const onSongEnded = useCallback(() => {
-    if (!autoPlayNext) {
-      return;
-    }
-
-    playNextSong();
-  }, [autoPlayNext, getNextSong]);
-
-  useEffect(() => {
-    if (!playNextQueueInitialized && song !== null) {
-      initializePlayNextQueue(song, true);
-    }
-  }, [song?.id]);
-
-  useEffect(() => {
-    const unsubscribe = subscribeToAudio((state) => {
-      if (state.ended && state.currentTrack !== null) {
-        onSongEnded();
-      }
-    })
-
-    return () => {
-      unsubscribe();
-    };
-  }, [onSongEnded]);
-
-  useEffect(() => {
-    if (!song?.id) return;
-
-    let activeSongUrl: string | null = null;
-    let activeThumbUrl: string | null = null;
-
-    const loadMediaContext = async () => {
-      const assets = await getOfflineAssets(song.id);
-
-      if (!assets.lyrics || assets.lyrics.length === 0) {
-        assets.lyrics = await fetchLyricsData(song.artistName, song.title, song.duration);
-      }
-
-      setOfflineAssets(assets);
-
-      activeSongUrl = assets.songUrl;
-      activeThumbUrl = assets.thumbnailUrl;
-
-      if (!assets.isOffline && isSongDownloaded(song.id)) {
-        removeDownloadedSong(song.id);
-      }
-
-      setLoading(false);
-    };
-
-    loadMediaContext();
-
-    return () => {
-      revokeBlobUrls(activeSongUrl, activeThumbUrl);
-    };
-  }, [song?.id, videoDownloading, lyricsDownloading, thumbnailDownloading]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -176,7 +126,7 @@ function WatchPageContent() {
       if (event.code === 'Space') {
         event.preventDefault();
         handlePlayPause();
-        setTriggerCount(prev => prev + 1);
+        setPlayPauseTriggerCount(prev => prev + 1);
       }
     };
 
@@ -187,71 +137,15 @@ function WatchPageContent() {
     };
   }, [handlePlayPause]);
 
-  const handleDownload = async () => {
-    if (!song?.id) {
-      setError("No song available to download.");
-      return;
-    }
-
-    if (!offlineAssets) {
-      throw new Error("Offline assets not initialized.");
-    }
-
-    setError(null);
-
-    try {
-      if (typeof window !== "undefined" && navigator.storage?.persist) {
-        await navigator.storage.persist();
-      }
-
-      const cache = await caches.open("offline-media-vault");
-
-      if (!offlineAssets.isOffline) {
-        setVideoDownloading(true);
-        await downloadVideoAsset(cache, song.id);
-        setVideoDownloading(false);
-      }
-
-      addDownloadedSong(song);
-
-      if (!offlineAssets.thumbnailUrl) {
-        setThumbnailDownloading(true);
-        await downloadThumbnailAsset(cache, song.id, song.thumbnailUrl);
-        setThumbnailDownloading(false);
-      }
-
-      if (!offlineAssets.lyrics || offlineAssets.lyrics.length === 0) {
-        setLyricsDownloading(true);
-        await downloadLyricsAsset(cache, song.id, song.artistName, song.title, song.duration);
-        setLyricsDownloading(false);
-      }
-
-      console.log("Track, artwork, and syncing lyrics saved offline successfully!");
-    } catch (err) {
-      console.error("Storage error:", err);
-      setError(err instanceof Error ? err.message : "An error occurred.");
-    } finally {
-      setVideoDownloading(false);
-      setLyricsDownloading(false);
-      setThumbnailDownloading(false);
-    }
-  };
-
   useEffect(() => {
-    if (autoplay && song && globalAudioState.currentTrack?.id !== song.id && offlineAssets?.songId === song.id) {
-      playSong(offlineAssets.songUrl, song);
-    }
-  }, [song?.id, offlineAssets?.songUrl]);
-
-  useEffect(() => {
-    const ready = (offlineAssets && (offlineAssets.isOffline || globalAudioState.currentTrack?.id === song?.id && globalAudioState.currentTime > 0)) ?? false;
+    const ready = (offlineAssets && (offlineAssets.isOffline || globalAudioState.currentSong?.id === song?.id && globalAudioState.currentTime > 0)) ?? false;
     setAudioReady(ready);
     if (ready) {
       setVideoDownloading(false);
     }
-  }, [offlineAssets?.isOffline, globalAudioState.currentTrack?.id, globalAudioState.currentTime, song?.id]);
+  }, [offlineAssets?.isOffline, globalAudioState.currentSong?.id, globalAudioState.currentTime, song?.id]);
 
-  if (loading || songLoading) {
+  if (loading) {
     return (
       <div className="flex flex-col lg:flex-row w-full min-h-screen mx-auto items-stretch lg:max-h-screen">
         <div className="w-full lg:w-2/3 space-y-3 p-4">
@@ -283,12 +177,12 @@ function WatchPageContent() {
     );
   }
 
-  if (error || songError || !song) {
+  if (error || !song) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center bg-background">
         <AlertCircle className="h-10 w-10 text-destructive mb-3" />
         <h2 className="text-lg font-semibold tracking-tight">Error!</h2>
-        <p className="text-sm text-muted-foreground mb-4">{error ?? songError}</p>
+        <p className="text-sm text-muted-foreground mb-4">{error}</p>
 
         <Link
           href="/search"
@@ -315,13 +209,13 @@ function WatchPageContent() {
                       loading="eager"
                       onClick={() => {
                         handlePlayPause()
-                        setTriggerCount(prev => prev + 1);
+                        setPlayPauseTriggerCount(prev => prev + 1);
                       }}
                     />
-                    {offlineAssets?.lyrics && offlineAssets.lyrics.length > 1 && globalAudioState.currentTrack?.id === song.id && (
+                    {offlineAssets?.lyrics && offlineAssets.lyrics.length > 1 && globalAudioState.currentSong?.id === song.id && (
                       <LyricsPlayer lyrics={offlineAssets?.lyrics} visible={showLyrics} />
                     )}
-                    <PlayPauseOverlay isPaused={isPaused} triggerCount={triggerCount} />
+                    <PlayPauseOverlay isPaused={isPaused} triggerCount={playPauseTriggerCount} />
                   </>
                 ) : (
                   <>
@@ -361,7 +255,7 @@ function WatchPageContent() {
               </div>
               <div className="flex items-center gap-2">
                 {offlineAssets?.isOffline && (
-                  <Badge><ArrowDownToLine />Downloaded</Badge>
+                  <Badge className="hidden lg:flex"><ArrowDownToLine />Downloaded</Badge>
                 )}
 
                 {offlineAssets?.lyrics && offlineAssets.lyrics.length > 1 ? (
@@ -374,14 +268,21 @@ function WatchPageContent() {
                   {
                     fields: [
                       {
-                        label: "Add to Playlist",
+                        label: "Add to playlist",
                         onClick: () => addSongToPlaylist(song),
                         disabled: currentPlaylist?.find((s) => s.id === song.id) !== undefined,
                       },
                       {
-                        label: "Remove from Playlist",
+                        label: "Remove from playlist",
                         onClick: () => removeSongFromPlaylist(song.id),
-                        disabled: currentPlaylist?.find((s) => s.id === song.id) === undefined || globalAudioState.currentTrack?.id === song.id,
+                        disabled: currentPlaylist?.find((s) => s.id === song.id) === undefined || globalAudioState.currentSong?.id === song.id,
+                      },
+                      {
+                        label: "Add to new playlist",
+                        onClick: () => {
+                          initializePlayNextQueue(song, true);
+                          playNextSong(song);
+                        }
                       },
                     ],
                   },
@@ -390,7 +291,7 @@ function WatchPageContent() {
                       {
                         label: showLyrics ? "Hide Lyrics" : "Show Lyrics",
                         onClick: () => setShowLyrics((prev) => !prev),
-                        disabled: !offlineAssets?.lyrics || offlineAssets.lyrics.length === 0 || globalAudioState.currentTrack?.id !== song.id,
+                        disabled: !offlineAssets?.lyrics || offlineAssets.lyrics.length === 0 || globalAudioState.currentSong?.id !== song.id,
                       }
                     ],
                   },
@@ -398,7 +299,7 @@ function WatchPageContent() {
                     fields: [
                       {
                         label: "Download",
-                        onClick: () => handleDownload(),
+                        onClick: () => handleDownload(song),
                         disabled: offlineAssets?.isOffline || videoDownloading || lyricsDownloading || thumbnailDownloading,
                       }
                     ],
@@ -414,15 +315,15 @@ function WatchPageContent() {
             <div className="flex items-center gap-2 overflow-auto scrollbar-none">
               <Button
                 disabled={offlineAssets?.isOffline || videoDownloading || lyricsDownloading || thumbnailDownloading}
-                onClick={() => handleDownload()}
+                onClick={() => handleDownload(song)}
               >
                 <ArrowDownToLine /> Download
               </Button>
               <Button
                 onClick={() => setShowLyrics((prev) => !prev)}
-                disabled={!offlineAssets?.lyrics || offlineAssets.lyrics.length === 0 || globalAudioState.currentTrack?.id !== song.id}
+                disabled={!offlineAssets?.lyrics || offlineAssets.lyrics.length === 0 || globalAudioState.currentSong?.id !== song.id}
               >
-                <Text /> {!offlineAssets?.lyrics || offlineAssets.lyrics.length === 0 ? "No" : showLyrics && globalAudioState.currentTrack?.id === song.id ? "Hide" : "Show"} Lyrics
+                <Text /> {!offlineAssets?.lyrics || offlineAssets.lyrics.length === 0 ? "No" : showLyrics && globalAudioState.currentSong?.id === song.id ? "Hide" : "Show"} Lyrics
               </Button>
               <Separator orientation="vertical" className="lg:hidden" />
               <Button
@@ -430,21 +331,30 @@ function WatchPageContent() {
                 disabled={currentPlaylist?.find((s) => s.id === song.id) !== undefined}
                 className="lg:hidden"
               >
-                Add to Playlist
+                Add to playlist
               </Button>
               <Button
                 onClick={() => removeSongFromPlaylist(song.id)}
-                disabled={currentPlaylist?.find((s) => s.id === song.id) === undefined || globalAudioState.currentTrack?.id === song.id}
+                disabled={currentPlaylist?.find((s) => s.id === song.id) === undefined || globalAudioState.currentSong?.id === song.id}
                 className="lg:hidden"
               >
-                Remove from Playlist
+                Remove from playlist
+              </Button>
+              <Button
+                onClick={() => {
+                  initializePlayNextQueue(song, true);
+                  playNextSong(song);
+                }}
+                className="lg:hidden"
+              >
+                Add to new playlist
               </Button>
             </div>
             <MobileSongControls
               song={song}
               handlePlayPause={handlePlayPause}
               handleNext={playNextSong}
-              handlePrevious={playPreviousSong}
+              handlePrevious={playPrevSong}
             />
           </div>
         </div>
@@ -459,11 +369,11 @@ function WatchPageContent() {
             enableReorder={true}
             onReorder={(newSongs) => setCurrentPlaylist(newSongs as SongData[])}
           />
-          <PlayNextList onEnabledChanged={onAutoplayEnabledChanged} />
+          <PlayNextList />
         </div>
       </div>
 
-      {song.id !== globalAudioState.currentTrack?.id && (
+      {song.id !== globalAudioState.currentSong?.id && (
         <>
           <Separator orientation="horizontal" />
           <CurrentlyPlaying />

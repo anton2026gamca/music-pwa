@@ -8,6 +8,7 @@ import { LayoutWrapper } from "@/components/layout-wrapper";
 import { AudioProvider } from "@/context/audio-context";
 import { SongsListProvider } from "@/context/songs-list-context";
 import { PlaylistProvider } from "@/context/playlist-context";
+import { Suspense } from "react";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -41,17 +42,19 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           enableSystem
           disableTransitionOnChange
         >
-          <SearchProvider>
-            <AudioProvider>
-              <SongsListProvider>
-                <PlaylistProvider>
-                  <LayoutWrapper>
-                    {children}
-                  </LayoutWrapper>
-                </PlaylistProvider>
-              </SongsListProvider>
-            </AudioProvider>
-          </SearchProvider>
+          <SongsListProvider>
+            <SearchProvider>
+              <AudioProvider>
+                <Suspense fallback={<div>Loading playlist...</div>}>
+                  <PlaylistProvider>
+                    <LayoutWrapper>
+                      {children}
+                    </LayoutWrapper>
+                  </PlaylistProvider>
+                </Suspense>
+              </AudioProvider>
+            </SearchProvider>
+          </SongsListProvider>
         </ThemeProvider>
       </body>
     </html>

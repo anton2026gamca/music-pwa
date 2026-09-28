@@ -130,7 +130,7 @@ export function SongPlaylist({
       {isOpen && !enableReorder && (
         <div>
           {resolvedSongs.map((song, i) => {
-            const isPlaying = song?.id === audioState.currentTrack?.id;
+            const isPlaying = song?.id === audioState.currentSong?.id;
             const progress = isPlaying
               ? (audioState.currentTime / audioState.duration) * 100
               : undefined;
@@ -161,7 +161,7 @@ export function SongPlaylist({
             <div>
               {resolvedSongs.map((song, i) => {
                 const id = itemIds[i];
-                const isPlaying = song?.id === audioState.currentTrack?.id;
+                const isPlaying = song?.id === audioState.currentSong?.id;
                 const progress = isPlaying
                   ? (audioState.currentTime / audioState.duration) * 100
                   : undefined;

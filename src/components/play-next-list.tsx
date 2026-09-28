@@ -1,33 +1,22 @@
-import { startTransition, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Switch } from "./ui/switch";
 import { SongItem } from "./song-item";
 import { Separator } from "./ui/separator";
 import { usePlaylist } from "@/context/playlist-context";
 import { SongData } from "@/app/api/actions";
-import { useRouter } from "next/navigation";
 import { SongPlaylist } from "./song-playlist";
 import { Plus } from "lucide-react";
 
-export function PlayNextList({ onEnabledChanged }: { onEnabledChanged?: (enabled: boolean) => void }) {
-  const router = useRouter()
-
-  const [enabled, setEnabled] = useState(true);
-  const { playNextList, setPlayNextList, loading, nextSong } = usePlaylist();
+export function PlayNextList() {
+  const { playNextList, setPlayNextList, loading, playNextSong, autoplayNext: enabled, setAutoplayNext: setEnabled } = usePlaylist();
   const [onClickOverrides, setOnClickOverrides] = useState<Array<(() => void) | null> | null>(null);
 
-  useEffect(() => {
-    onEnabledChanged?.(enabled);
-  }, [enabled, onEnabledChanged]);
-
   const getSongOnClickOverride = (song: SongData) => (() => {
-    nextSong(song);
-    startTransition(() => {
-      router.push(`/watch?id=${song.id}`)
-    })
+    playNextSong(song);
   })
 
   useEffect(() => {
-    if (getSongOnClickOverride && playNextList) {
+    if (playNextList) {
       const overrides = playNextList.map((song) => getSongOnClickOverride(song));
       setOnClickOverrides(overrides);
     }

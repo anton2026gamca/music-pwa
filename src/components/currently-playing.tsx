@@ -5,7 +5,7 @@ import { useFetchSongData } from "@/hooks/use-fetch-song-data";
 
 export function CurrentlyPlaying() {
   const { state } = useAudio();
-  const { song } = useFetchSongData(state.currentTrack?.id ?? null);
+  const { song } = useFetchSongData(state.currentSong?.id ?? null);
 
   const progress = state.duration > 0 ? (state.currentTime / state.duration) * 100 : null;
 

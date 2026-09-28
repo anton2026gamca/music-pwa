@@ -23,11 +23,11 @@ export function SongControls({ src = null, song = null, className = '', handlePl
 
   const songData = song;
 
-  const currentTrack = state.currentTrack;
+  const currentTrack = state.currentSong;
   const isCurrent = src && songData ? currentTrack?.id === songData.id : !!currentTrack;
 
   useEffect(() => {
-    if (src && songData && !state.currentTrack) {
+    if (src && songData && !state.currentSong) {
       loadSong(src, songData);
     }
   }, [src, songData, currentTrack, loadSong]);

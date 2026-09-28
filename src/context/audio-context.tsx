@@ -4,7 +4,7 @@ import { SongData } from '@/app/api/actions';
 import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
 
 export interface AudioState {
-  currentTrack: SongData | null;
+  currentSong: SongData | null;
   isPlaying: boolean;
   currentTime: number;
   duration: number;
@@ -35,7 +35,7 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
   const prevTrackHandlerRef = useRef<(() => void) | null>(null);
 
   const [state, setState] = useState<AudioState>({
-    currentTrack: null,
+    currentSong: null,
     isPlaying: false,
     currentTime: 0,
     duration: 0,
@@ -45,7 +45,7 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
   const emitChange = (updates: Partial<AudioState> = {}) => {
     setState((prev) => ({ ...prev, ended: false, ...updates }));
     if (updates.currentTime === undefined || updates.isPlaying !== undefined) {
-      console.log(updates);
+      console.log("Audio state updated: ", updates);
     }
   };
 
@@ -74,10 +74,10 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    if (!('mediaSession' in navigator) || !state.currentTrack) return;
+    if (!('mediaSession' in navigator) || !state.currentSong) return;
     navigator.mediaSession.metadata = new MediaMetadata({
-      title: state.currentTrack.title,
-      artist: state.currentTrack.artistName,
+      title: state.currentSong.title,
+      artist: state.currentSong.artistName,
     });
     navigator.mediaSession.setActionHandler('play', () => audioRef.current?.play().catch(() => { }));
     navigator.mediaSession.setActionHandler('pause', () => audioRef.current?.pause());
@@ -85,7 +85,7 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
     navigator.mediaSession.setActionHandler('nexttrack', nextTrackHandlerRef.current ? () => nextTrackHandlerRef.current?.() : null);
     navigator.mediaSession.setActionHandler('previoustrack', prevTrackHandlerRef.current ? () => prevTrackHandlerRef.current?.() : null);
     navigator.mediaSession.setActionHandler('stop', () => { audioRef.current?.pause(); });
-  }, [state.currentTrack]);
+  }, [state.currentSong]);
 
   useEffect(() => {
     if (!('mediaSession' in navigator)) return;
@@ -119,7 +119,7 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
     if (audioRef.current.src !== src) {
       audioRef.current.src = src;
       audioRef.current.load();
-      emitChange({ currentTrack: songData, currentTime: 0, duration: 0 });
+      emitChange({ currentSong: songData, currentTime: 0, duration: 0 });
     }
   };
 
@@ -129,7 +129,7 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
       audioRef.current.src = src;
     }
     console.log("Playing song:", songData.title, "from src:", src);
-    emitChange({ currentTrack: songData, isPlaying: true });
+    emitChange({ currentSong: songData, isPlaying: true });
     audioRef.current.play().catch((err) => console.warn("Playback blocked:", err));
   };
 
@@ -162,14 +162,7 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
   const subscribe = (callback: (state: AudioState) => void) => {
     listenersRef.current.add(callback);
 
-    const timeoutId = setTimeout(() => {
-      if (listenersRef.current.has(callback)) {
-        callback(state);
-      }
-    }, 0);
-
     return () => {
-      clearTimeout(timeoutId);
       listenersRef.current.delete(callback);
     };
   };

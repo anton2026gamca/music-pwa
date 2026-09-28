@@ -43,7 +43,7 @@ export async function getOfflineAssets(
       if (cachedLyrics) {
         const lyricsJson = await cachedLyrics.json();
         if (lyricsJson.syncedLyrics) {
-          lyrics = parseLrcString(lyricsJson.syncedLyrics);
+          lyrics = lyricsJson.syncedLyrics;
         }
       }
 
@@ -133,19 +133,13 @@ export async function downloadThumbnailAsset(cache: Cache, songId: string, thumb
 /**
  * Fetches lyrics from LRCLIB and transforms them into a cacheable API response format.
  */
-export async function downloadLyricsAsset(cache: Cache, songId: string, artistName: string, title: string, duration: number): Promise<void> {
+export async function storeLyricsAsset(cache: Cache, songId: string, lyrics: Array<{ time: number; text: string }>): Promise<void> {
   try {
-    const lrclibUrl = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artistName)}&track_name=${encodeURIComponent(title)}&duration=${duration}`;
-    const response = await fetch(lrclibUrl);
+    const jsonResponse = new Response(JSON.stringify({ syncedLyrics: lyrics }), {
+      headers: { "Content-Type": "application/json" }
+    });
 
-    if (response.ok) {
-      const lyricsData = await response.json();
-      const jsonResponse = new Response(JSON.stringify(lyricsData), {
-        headers: { "Content-Type": "application/json" }
-      });
-
-      await cache.put(`/api/offline/lyrics?id=${songId}`, jsonResponse);
-    }
+    await cache.put(`/api/offline/lyrics?id=${songId}`, jsonResponse);
   } catch (err) {
     console.warn("LRCLIB matching lyrics not found or failed.", err);
   }
