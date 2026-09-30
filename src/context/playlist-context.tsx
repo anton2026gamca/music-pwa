@@ -119,7 +119,9 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
     const currentSongId = currentSong?.id;
 
     if (isLast || songOverride) {
-      setPlaylist((prev) => [...prev?.filter((song) => song.id !== next.id) ?? [], next])
+      if (!playlist || playlist.find((s) => s.id === next.id) === undefined) {
+        setPlaylist((prev) => [...prev?.filter((song) => song.id !== next.id) ?? [], next])
+      }
       setPlayNextList((prev) => prev?.filter((song) => song.id !== next.id) ?? [])
     }
 

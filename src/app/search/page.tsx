@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { searchSongs, SongData } from '@/app/api/actions';
-import { SongItem } from '@/components/song-item';
+import { SongItem } from '@/components/song/song-item';
 import { Loader2, Music4, SearchX, WifiOff } from "lucide-react";
 import dynamic from 'next/dynamic';
 

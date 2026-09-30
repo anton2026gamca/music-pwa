@@ -1,7 +1,7 @@
 "use client";
 
 import { SongData } from "@/app/api/actions";
-import { SongItem } from "./song-item";
+import { SongItem } from "../song/song-item";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useAudio } from "@/context/audio-context";
@@ -23,8 +23,8 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers";
-import { SortableSongItem } from "./sortable-song-item";
-import { SongDragPreview } from "./song-drag-preview";
+import { SortableSongItem } from "../song/sortable-song-item";
+import { SongDragPreview } from "../song/song-drag-preview";
 
 interface SongPlaylistProps {
   title?: string;

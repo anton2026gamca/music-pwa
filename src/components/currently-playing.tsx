@@ -1,5 +1,5 @@
 import { useAudio } from "@/context/audio-context";
-import { SongItem } from "./song-item";
+import { SongItem } from "./song/song-item";
 import { useFetchSongData } from "@/hooks/use-fetch-song-data";
 
 

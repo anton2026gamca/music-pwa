@@ -1,5 +1,5 @@
 import { SongData } from "@/app/api/actions";
-import { Item, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "./ui/item";
+import { Item, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "../ui/item";
 import Image from "next/image";
 import { formatDuration } from "@/lib/utils";
 

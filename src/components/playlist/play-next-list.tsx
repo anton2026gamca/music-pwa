@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Switch } from "./ui/switch";
-import { SongItem } from "./song-item";
-import { Separator } from "./ui/separator";
+import { Switch } from "../ui/switch";
+import { SongItem } from "../song/song-item";
+import { Separator } from "../ui/separator";
 import { usePlaylist } from "@/context/playlist-context";
 import { SongData } from "@/app/api/actions";
 import { SongPlaylist } from "./song-playlist";

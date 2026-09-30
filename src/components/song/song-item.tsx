@@ -1,14 +1,14 @@
 'use client';
 
 import { SongData } from '@/app/api/actions';
-import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from './ui/item';
+import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from '../ui/item';
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { formatDuration } from '@/lib/utils';
 import { memo, useEffect, useState } from 'react';
 import { getOfflineAssets, OfflineAssets, revokeBlobUrls } from '@/lib/download-utils';
-import { Skeleton } from './ui/skeleton';
+import { Skeleton } from '../ui/skeleton';
 
 interface SongItemProps {
   song: SongData | null;

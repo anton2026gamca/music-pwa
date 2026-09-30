@@ -1,6 +1,6 @@
 'use client';
 
-import { SongPlaylist } from "@/components/song-playlist";
+import { SongPlaylist } from "@/components/playlist/song-playlist";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Separator } from "@/components/ui/separator"
 import { useDownloadedSongs } from "@/hooks/use-downloaded-songs";
@@ -9,7 +9,6 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-
 
 const SearchBar = dynamic(() => import('@/components/search/search-bar'), { ssr: false });
 
