@@ -33,6 +33,7 @@ interface SongPlaylistProps {
   onReorder?: (newSongs: Array<string | SongData>) => void;
   onClickOverrides?: Array<(() => void) | null> | null;
   iconOverrides?: Array<React.JSX.Element | null> | null;
+  buttons?: React.ReactNode;
 }
 
 function getSongKey(song: string | SongData, index: number) {
@@ -46,6 +47,7 @@ export function SongPlaylist({
   onReorder,
   onClickOverrides,
   iconOverrides,
+  buttons,
 }: SongPlaylistProps) {
   const [isOpen, setIsOpen] = useState(true);
   const { state: audioState } = useAudio();
@@ -113,18 +115,26 @@ export function SongPlaylist({
   return (
     <div className="w-full">
       {title && (
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          aria-expanded={isOpen}
-          className="flex justify-between items-center w-full px-3 py-2 text-sm font-semibold uppercase hover:bg-neutral-100 dark:hover:bg-neutral-900 border-b border-border"
-        >
-          <span>{title}</span>
-          {isOpen ? (
-            <ChevronUp className="w-4 h-4 text-neutral-500" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-neutral-500" />
+        <div className="flex items-center w-full hover:bg-neutral-100 dark:hover:bg-neutral-900 border-b border-border">
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            aria-expanded={isOpen}
+            className="flex justify-between items-center flex-1 px-3 py-2 text-sm font-semibold uppercase"
+          >
+            <span>{title}</span>
+            {isOpen ? (
+              <ChevronUp className="w-4 h-4 text-neutral-500" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-neutral-500" />
+            )}
+          </button>
+
+          {buttons && (
+            <div className="flex items-center gap-1 pr-3" onClick={(e) => e.stopPropagation()}>
+              {buttons}
+            </div>
           )}
-        </button>
+        </div>
       )}
 
       {isOpen && !enableReorder && (

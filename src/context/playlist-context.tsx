@@ -25,6 +25,8 @@ interface PlayNextContextType {
   playPrevSong: () => void;
   autoplayNext: boolean;
   setAutoplayNext: (enabled: boolean) => void;
+  loopEnabled: boolean;
+  setLoopEnabled: (enabled: boolean) => void;
   offlineAssets: OfflineAssets | null;
 }
 
@@ -40,6 +42,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
   const [playlist, setPlaylist] = useState<SongData[] | null>(null);
   const [playNextList, setPlayNextList] = useState<SongData[] | null>(null);
   const [autoplayNext, setAutoplayNext] = useState(true);
+  const [loopEnabled, setLoopEnabled] = useState(false);
 
   const online = useOnline();
 
@@ -108,11 +111,17 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
     const playlistIndex = playlist?.findIndex((song) => song.id === currentSong?.id) ?? -1;
     const isLast = !playlist || playlist.length === 0 || playlistIndex === playlist?.length - 1;
 
-    const next = songOverride
-      ? songOverride
-      : (isLast
-        ? (autoplayNext ? playNextList?.[0] : null)
-        : playlist[playlistIndex + 1]);
+    let next = null;
+
+    if (songOverride) {
+      next = songOverride;
+    } else if (isLast) {
+      next = loopEnabled
+        ? playlist?.[0] ?? null
+        : playNextList?.[0] ?? null;
+    } else {
+      playlist[playlistIndex + 1];
+    }
 
     if (!next) return;
 
@@ -151,7 +160,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Failed to load offline assets for the next song:", error);
     }
-  }, [playlist, currentSong, playNextList, initializeQueue, loadAssets, searchParams]);
+  }, [playlist, currentSong, playNextList, initializeQueue, loadAssets, searchParams, loopEnabled]);
 
   const playPrevSong = useCallback(async () => {
     const prev = getPrevSong();
@@ -211,6 +220,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
       addSong, removeSong,
       playNextSong, playPrevSong,
       autoplayNext, setAutoplayNext,
+      loopEnabled, setLoopEnabled,
       offlineAssets,
     }}>
       {children}

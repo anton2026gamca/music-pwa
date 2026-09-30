@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Loader2, AlertCircle, Play, ArrowDownToLine, Check, X, Text, WifiOff } from "lucide-react";
+import { Loader2, AlertCircle, Play, ArrowDownToLine, Check, X, Text, WifiOff, Repeat } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import { MobileSongControls } from "@/components/song/mobile-song-controls";
 import { useOnline } from "@/hooks/use-online";
 import { useOfflineAssets } from "@/hooks/use-offline-assets";
 import { OfflineAssets, revokeBlobUrls } from "@/lib/download-utils";
+import { Toggle } from "@/components/ui/toggle";
 
 export default function WatchPageContent() {
   const [isMounted, setIsMounted] = useState(false);
@@ -58,12 +59,12 @@ export default function WatchPageContent() {
   const {
     playlist: currentPlaylist,
     setPlaylist: setCurrentPlaylist,
-    playNextSong,
-    playPrevSong,
+    playNextSong, playPrevSong,
     initializeQueue: initializePlayNextQueue,
     addSong: addSongToPlaylist,
     removeSong: removeSongFromPlaylist,
     offlineAssets: playlistOfflineAssets,
+    loopEnabled, setLoopEnabled,
   } = usePlaylist();
   const [loadedOfflineAssets, setLoadedOfflineAssets] = useState<OfflineAssets | null>(null);
   const offlineAssets = loadedOfflineAssets ?? playlistOfflineAssets;
@@ -371,9 +372,20 @@ export default function WatchPageContent() {
 
         <div className="w-full lg:w-1/3 flex flex-col overflow-auto">
           <SongPlaylist
+            title="Current playlist"
             songs={currentPlaylist}
             enableReorder={true}
             onReorder={(newSongs) => setCurrentPlaylist(newSongs as SongData[])}
+            buttons={
+              <>
+                {/* <Button onClick={() => { }}> */}
+                {/*   Save */}
+                {/* </Button> */}
+                <Toggle pressed={loopEnabled} onPressedChange={(pressed) => setLoopEnabled(pressed)} className="aria-pressed:bg-foreground aria-pressed:text-background">
+                  <Repeat />
+                </Toggle>
+              </>
+            }
           />
           <PlayNextList />
         </div>
