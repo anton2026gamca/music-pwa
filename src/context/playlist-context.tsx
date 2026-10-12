@@ -5,8 +5,11 @@ import { createContext, useContext, useState, ReactNode, useCallback, useEffect 
 import { useAudio } from './audio-context';
 import { useOnline } from '@/hooks/use-online';
 import { useOfflineAssets } from '@/hooks/use-offline-assets';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { OfflineAssets, revokeBlobUrls } from '@/lib/download-utils';
+import { useSongsListContext } from './songs-list-context';
+import { fetchSongsData } from '@/hooks/use-fetch-song-data';
+import useSearchParamsHelpers from '@/hooks/use-search-params-helper';
 
 interface PlayNextContextType {
   initialized: boolean;
@@ -16,7 +19,7 @@ interface PlayNextContextType {
   setPlaylist: (songs: SongData[] | null) => void;
   playNextList: SongData[] | null;
   setPlayNextList: (songs: SongData[] | null) => void;
-  initializeQueue: (currentSong: SongData, reset?: boolean) => Promise<void>;
+  initializeQueue: (currentSong: SongData | null, reset?: boolean, playlistKey?: string) => Promise<void>;
   getNextSong: () => SongData | null;
   getPrevSong: () => SongData | null;
   addSong: (song: SongData) => void;
@@ -28,14 +31,20 @@ interface PlayNextContextType {
   loopEnabled: boolean;
   setLoopEnabled: (enabled: boolean) => void;
   offlineAssets: OfflineAssets | null;
+  playlistKey: string | null;
+  setPlaylistKey: (value: string | null) => void;
+  differentFromSaved: boolean;
+  setDifferentFromSaved: (value: boolean) => void;
 }
 
 const PlaylistContext = createContext<PlayNextContextType | undefined>(undefined);
 
 export function PlaylistProvider({ children }: { children: ReactNode }) {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { updateSearchParam } = useSearchParamsHelpers();
+
+  const { getSongsList } = useSongsListContext();
 
   const [initialized, setInitialized] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -43,6 +52,8 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
   const [playNextList, setPlayNextList] = useState<SongData[] | null>(null);
   const [autoplayNext, setAutoplayNext] = useState(true);
   const [loopEnabled, setLoopEnabled] = useState(false);
+  const [playlistKey, setPlaylistKey] = useState<string | null>(null);
+  const [differentFromSaved, setDifferentFromSaved] = useState(false);
 
   const online = useOnline();
 
@@ -51,17 +62,51 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
   const [offlineAssets, setOfflineAssets] = useState<OfflineAssets | null>(null);
   const { loadAssets } = useOfflineAssets();
 
-  const initializeQueue = useCallback(async (song: SongData, reset: boolean = false) => {
+  const initializeQueue = useCallback(async (song: SongData | null = null, reset: boolean = false, playlistKey: string | null = null) => {
     setLoading(true);
 
     try {
+      let lastSongId = null;
+      let newPlaylist = null;
+
       if (reset || !playlist || playlist.length === 0) {
-        setPlaylist([song]);
+        if (playlistKey) {
+          const songIds = getSongsList(playlistKey);
+          const { songs, error } = await fetchSongsData(songIds)
+
+          if (song && !songs.find((s) => s.id === song.id)) {
+            newPlaylist = [...songs, song];
+            setPlaylist(newPlaylist);
+            setDifferentFromSaved(true);
+            lastSongId = song.id;
+          } else {
+            newPlaylist = songs;
+            setPlaylist(newPlaylist);
+            setDifferentFromSaved(false);
+            lastSongId = songs.length > 0 ? songs[songs.length - 1].id : null;
+          }
+
+          setPlaylistKey(error ? null : playlistKey);
+          // console.log(`Initialized playlist with key: ${playlistKey}`, "songIds:", songIds, "songs:", songs, "error:", error);
+        } else {
+          setPlaylist(song ? [song] : []);
+          setPlaylistKey(null);
+          setDifferentFromSaved(true);
+        }
       }
 
       if (!online) return;
 
-      const suggestions = await getPlayNextSuggestions(song.id);
+      const suggestionsId = song?.id ?? lastSongId ?? playlist?.[playlist.length - 1]?.id ?? null;
+      const currentPlaylist = newPlaylist ?? playlist;
+      const suggestions = (
+        suggestionsId
+          ? await getPlayNextSuggestions(suggestionsId)
+          : null
+      )?.filter(
+        (s) => !currentPlaylist || currentPlaylist.find((song) => song.id === s.id) === undefined
+      );
+      // console.log(`Fetched play next suggestions for song ID: ${suggestionsId}`);
 
       setPlayNextList((prev) => {
         return reset || !prev
@@ -98,6 +143,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
 
   const addSong = useCallback((song: SongData) => {
     setPlaylist((prev) => [...prev ?? [], song]);
+    setDifferentFromSaved(true);
   }, []);
 
   const removeSong = useCallback((songId: string) => {
@@ -105,6 +151,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
       return;
     }
     setPlaylist((prev) => prev?.filter((song) => song.id !== songId) ?? []);
+    setDifferentFromSaved(true);
   }, [currentSong]);
 
   const playNextSong = useCallback(async (songOverride?: SongData) => {
@@ -130,6 +177,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
     if (isLast || songOverride) {
       if (!playlist || playlist.find((s) => s.id === next.id) === undefined) {
         setPlaylist((prev) => [...prev?.filter((song) => song.id !== next.id) ?? [], next])
+        setDifferentFromSaved(true);
       }
       setPlayNextList((prev) => prev?.filter((song) => song.id !== next.id) ?? [])
     }
@@ -152,9 +200,9 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
       sessionStorage.setItem(`song_${next.id}`, JSON.stringify(next));
 
       const currentUrlId = searchParams.get('id');
-      console.log(`Current URL ID: ${currentUrlId}, Current Song ID: ${currentSongId}, Next Song ID: ${next.id}`);
+      // console.log(`Current URL ID: ${currentUrlId}, Current Song ID: ${currentSongId}, Next Song ID: ${next.id}`);
       if (pathname === '/watch' && currentUrlId === currentSongId) {
-        router.push(`?id=${encodeURIComponent(next.id)}`);
+        updateSearchParam('id', next.id);
       }
 
     } catch (error) {
@@ -173,8 +221,9 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
       playSong(assets.songUrl, prev);
 
       sessionStorage.setItem(`song_${prev.id}`, JSON.stringify(prev));
-      router.push(`/watch?id=${encodeURIComponent(prev.id)}`);
-
+      if (pathname === '/watch') {
+        updateSearchParam('id', prev.id);
+      }
     } catch (error) {
       console.error("Failed to load offline assets for the next song:", error);
     }
@@ -192,7 +241,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
 
   const onSongEnded = useCallback(() => {
     if (autoplayNext) {
-      console.log("Song ended, autoplaying next song...");
+      // console.log("Song ended, autoplaying next song...");
       playNextSong();
     }
   }, [autoplayNext, playNextSong]);
@@ -222,6 +271,8 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
       autoplayNext, setAutoplayNext,
       loopEnabled, setLoopEnabled,
       offlineAssets,
+      playlistKey, setPlaylistKey,
+      differentFromSaved, setDifferentFromSaved
     }}>
       {children}
     </PlaylistContext.Provider>

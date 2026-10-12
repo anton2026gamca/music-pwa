@@ -1,89 +1,103 @@
 'use client';
 
 import { SongData } from '@/app/api/actions';
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, createContext, useContext } from 'react';
 
-export enum SongListKey {
-  Downloaded = 'downloaded_songs',
-  Cached = 'cached_songs',
-}
-
-type SongsState = Record<SongListKey, string[]>;
+type SongsState = Record<string, string[]>;
 
 interface SongsContextType {
-  getSongsList: (listKey: SongListKey) => string[];
-  addSong: (listKey: SongListKey, song: SongData) => void;
-  removeSong: (listKey: SongListKey, id: string) => void;
-  includesSong: (listKey: SongListKey, key: string) => boolean;
+  saveList: (listKey: string, newKeys: string[]) => void;
+  getSongsList: (listKey: string) => string[];
+  addSong: (listKey: string, song: SongData) => void;
+  removeSong: (listKey: string, id: string) => void;
+  includesSong: (listKey: string, key: string) => boolean;
   getSongData: (id: string) => SongData | null;
 }
 
 const SongsContext = createContext<SongsContextType | undefined>(undefined);
 
-const initialEmptyState: SongsState = {
-  [SongListKey.Downloaded]: [],
-  [SongListKey.Cached]: [],
-};
-
 export function SongsListProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<SongsState>(initialEmptyState);
+  const getPlaylistKey = (key: string) => {
+    return key === "downloaded_songs" ? "downloaded_songs" : `playlist_${key}`;
+  }
 
-  useEffect(() => {
-    const loadedState = { ...initialEmptyState };
+  const [state, setState] = useState<SongsState>(() => {
+    if (typeof window === "undefined") return {};
 
-    Object.values(SongListKey).forEach((listKey) => {
-      const stored = localStorage.getItem(listKey);
-      if (stored) {
-        try {
+    const loadedState: SongsState = {};
+    try {
+      const lists: Array<string> = JSON.parse(localStorage.getItem('playlists') || "[]");
+      lists.forEach((listKey) => {
+        const stored = localStorage.getItem(getPlaylistKey(listKey));
+        if (stored) {
           loadedState[listKey] = JSON.parse(stored);
-        } catch (e) {
-          console.error(`Failed to parse storage key ${listKey}:`, e);
         }
-      }
-    });
+      });
+    } catch (e) {
+      console.error("Failed to parse initial storage", e);
+    }
 
-    setState(loadedState);
-  }, []);
+    return loadedState;
+  });
 
-  const saveList = (listKey: SongListKey, newKeys: string[]) => {
+  const saveList = (listKey: string, newKeys: string[]) => {
     setState((prev) => ({ ...prev, [listKey]: newKeys }));
-    localStorage.setItem(listKey, JSON.stringify(newKeys));
+    (listKey === "current_playlist" ? sessionStorage : localStorage).setItem(getPlaylistKey(listKey), JSON.stringify(newKeys));
+    localStorage.setItem('playlists', JSON.stringify(Object.keys({ ...state, [listKey]: newKeys.length > 0 ? newKeys : undefined }).filter((key) => key !== "current_playlist")));
   };
 
-  const addSong = (listKey: SongListKey, song: SongData) => {
-    const currentList = state[listKey];
+  const addSong = (listKey: string, song: SongData) => {
+    const currentList = state[listKey] ?? [];
     const updated = Array.from(new Set([...currentList, song.id]));
     saveList(listKey, updated);
 
     localStorage.setItem(`song_${song.id}`, JSON.stringify(song));
   };
 
-  const removeSong = (listKey: SongListKey, id: string) => {
-    const updated = state[listKey].filter((k) => k !== id);
+  const removeSong = (listKey: string, id: string) => {
+    const updated = state[listKey]?.filter((k) => k !== id) ?? [];
     saveList(listKey, updated);
   };
 
   const getSongData = (id: string): SongData | null => {
     if (typeof window === "undefined") return null;
-    const raw = localStorage.getItem(`song_${id}`);
+    const raw = sessionStorage.getItem(`song_${id}`) ?? localStorage.getItem(`song_${id}`);
     return raw ? JSON.parse(raw) : null;
   };
 
-  const getSongsList = (listKey: SongListKey) => state[listKey];
+  const getSongsList = (listKey: string) => state[listKey];
 
-  const includesSong = (listKey: SongListKey, key: string) => state[listKey].includes(key);
+  const includesSong = (listKey: string, key: string) => state[listKey]?.includes(key) ?? false;
 
   return (
-    <SongsContext.Provider value={{ getSongsList, addSong, removeSong, includesSong, getSongData }}>
+    <SongsContext.Provider value={{ saveList, getSongsList, addSong, removeSong, includesSong, getSongData }}>
       {children}
     </SongsContext.Provider>
   );
 }
 
-export function useSongsList() {
+export function useSongsList(listKey: string) {
   const context = useContext(SongsContext);
+
   if (!context) {
     throw new Error("useSongs must be used within a SongsProvider");
   }
+
+  return {
+    songsList: context.getSongsList(listKey),
+    addSong: (song: SongData) => context.addSong(listKey, song),
+    removeSong: (id: string) => context.removeSong(listKey, id),
+    includesSong: (id: string) => context.includesSong(listKey, id),
+    getSongData: context.getSongData,
+  };
+}
+
+export function useSongsListContext() {
+  const context = useContext(SongsContext);
+
+  if (!context) {
+    throw new Error("useSongs must be used within a SongsProvider");
+  }
+
   return context;
 }

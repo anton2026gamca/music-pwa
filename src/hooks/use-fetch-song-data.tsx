@@ -85,3 +85,40 @@ export function useFetchSongsData(songIds: string[]) {
 
   return { songs, loading, error };
 }
+
+export async function fetchSongsData(songIds: string[]) {
+  let songs: SongData[] = [];
+  let error: string | null = null;
+
+  const load = async () => {
+    if (!songIds || songIds.length === 0) {
+      error = "No song IDs provided.";
+      return;
+    }
+
+    const fetchPromises = songIds.map(async (id) => {
+      const cached = sessionStorage.getItem(`song_${id}`) ?? localStorage.getItem(`song_${id}`);
+      if (cached) {
+        return JSON.parse(cached) as SongData;
+      }
+
+      return getSongDetails(id);
+    });
+
+    await Promise.all(fetchPromises)
+      .then((results) => {
+        const validSongs = results.filter((song): song is SongData => song !== null);
+
+        if (validSongs.length > 0) {
+          songs = validSongs;
+        } else {
+          error = "Could not retrieve any song details.";
+        }
+      })
+      .catch(() => error = "An unexpected server error occurred.")
+  }
+
+  await load();
+
+  return { songs, error };
+}

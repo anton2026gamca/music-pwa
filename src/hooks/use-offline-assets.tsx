@@ -2,8 +2,8 @@
 
 import { downloadThumbnailAsset, downloadVideoAsset, fetchLyricsData, getOfflineAssets, OfflineAssets, revokeBlobUrls, storeLyricsAsset } from "@/lib/download-utils";
 import { useCallback, useEffect, useState } from "react";
-import { useDownloadedSongs } from "@/hooks/use-downloaded-songs";
 import { SongData } from "@/app/api/actions";
+import { useSongsList } from "@/context/songs-list-context";
 
 export function useOfflineAssets(initialSong: SongData | null = null) {
   const [loading, setLoading] = useState(false);
@@ -14,7 +14,7 @@ export function useOfflineAssets(initialSong: SongData | null = null) {
     addSong: addDownloadedSong,
     removeSong: removeDownloadedSong,
     includesSong: isSongDownloaded
-  } = useDownloadedSongs();
+  } = useSongsList("downloaded_songs");
 
   const [videoDownloading, setVideoDownloading] = useState(false);
   const [lyricsDownloading, setLyricsDownloading] = useState(false);
@@ -22,7 +22,7 @@ export function useOfflineAssets(initialSong: SongData | null = null) {
 
   const loadAssets = useCallback(async (song: SongData) => {
     setLoading(true);
-    console.log(`Loading offline assets for song: ${song.title} by ${song.artistName}`);
+    // console.log(`Loading offline assets for song: ${song.title} by ${song.artistName}`);
     try {
       const assets = await getOfflineAssets(song.id);
 
@@ -31,6 +31,8 @@ export function useOfflineAssets(initialSong: SongData | null = null) {
       }
 
       setOfflineAssets(assets);
+
+      // console.log(`Assets is offline: ${assets.isOffline}`);
 
       if (!assets.isOffline && isSongDownloaded(song.id)) {
         removeDownloadedSong(song.id);

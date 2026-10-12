@@ -28,6 +28,7 @@ import { SongDragPreview } from "../song/song-drag-preview";
 
 interface SongPlaylistProps {
   title?: string;
+  titleClassName?: string;
   songs: Array<string | SongData> | null;
   enableReorder?: boolean;
   onReorder?: (newSongs: Array<string | SongData>) => void;
@@ -42,6 +43,7 @@ function getSongKey(song: string | SongData, index: number) {
 
 export function SongPlaylist({
   title,
+  titleClassName,
   songs: mixedSongs,
   enableReorder = false,
   onReorder,
@@ -121,7 +123,7 @@ export function SongPlaylist({
             aria-expanded={isOpen}
             className="flex justify-between items-center flex-1 px-3 py-2 text-sm font-semibold uppercase"
           >
-            <span>{title}</span>
+            <span className={titleClassName}>{title}</span>
             {isOpen ? (
               <ChevronUp className="w-4 h-4 text-neutral-500" />
             ) : (

@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
-import WatchPageContent from "./page-context";
+import WatchPageContent from "./page-content";
 
 export default function WatchPage() {
   return (

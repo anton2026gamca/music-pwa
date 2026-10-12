@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -26,6 +26,8 @@ import { useOnline } from "@/hooks/use-online";
 import { useOfflineAssets } from "@/hooks/use-offline-assets";
 import { OfflineAssets, revokeBlobUrls } from "@/lib/download-utils";
 import { Toggle } from "@/components/ui/toggle";
+import { SavePlaylistButton } from "./_components/save-playlist-button";
+import useSearchParamsHelpers from "@/hooks/use-search-params-helper";
 
 export default function WatchPageContent() {
   const [isMounted, setIsMounted] = useState(false);
@@ -37,7 +39,11 @@ export default function WatchPageContent() {
   const online = useOnline();
 
   const searchParams = useSearchParams();
+  const { updateSearchParam } = useSearchParamsHelpers();
+
   const songIdParam = searchParams.get("id");
+  const playlistParam = searchParams.get("playlist");
+
   const { song, loading: songLoading, error: songError } = useFetchSongData(songIdParam);
 
   const {
@@ -65,6 +71,8 @@ export default function WatchPageContent() {
     removeSong: removeSongFromPlaylist,
     offlineAssets: playlistOfflineAssets,
     loopEnabled, setLoopEnabled,
+    playlistKey,
+    differentFromSaved, setDifferentFromSaved,
   } = usePlaylist();
   const [loadedOfflineAssets, setLoadedOfflineAssets] = useState<OfflineAssets | null>(null);
   const offlineAssets = loadedOfflineAssets ?? playlistOfflineAssets;
@@ -80,30 +88,36 @@ export default function WatchPageContent() {
     let songUrl: string | null = null;
     let thumbnailUrl: string | null = null;
 
-    const load = async () => {
-      if (!song?.id) return;
-
-      if (playlistOfflineAssets?.songId === song.id) {
-        console.log(`[watch/page] Using playlist offline assets for song: ${song?.title} by ${song?.artistName}`);
-        setLoadedOfflineAssets(playlistOfflineAssets);
-      } else {
-        console.log(`[watch/page] Loading offline assets for song: ${song?.title} by ${song?.artistName}`);
-
-        const assets = await loadOfflineAssets(song);
-
-        songUrl = assets?.songUrl ?? null;
-        thumbnailUrl = assets?.thumbnailUrl ?? null;
-
-        setLoadedOfflineAssets(assets);
+    if (song) {
+      if (playlistParam && playlistKey !== playlistParam) {
+        initializePlayNextQueue(null, true, playlistParam);
       }
+
+      const load = async () => {
+        if (!song?.id) return;
+
+        if (playlistOfflineAssets?.songId === song.id) {
+          // console.log(`[watch/page] Using playlist offline assets for song: ${song?.title} by ${song?.artistName}`);
+          setLoadedOfflineAssets(playlistOfflineAssets);
+        } else {
+          // console.log(`[watch/page] Loading offline assets for song: ${song?.title} by ${song?.artistName}`);
+
+          const assets = await loadOfflineAssets(song);
+
+          songUrl = assets?.songUrl ?? null;
+          thumbnailUrl = assets?.thumbnailUrl ?? null;
+
+          setLoadedOfflineAssets(assets);
+        }
+      }
+      load();
     }
-    load();
 
     return () => {
       revokeBlobUrls(songUrl, thumbnailUrl);
       setLoadedOfflineAssets(null);
     }
-  }, [song?.id]);
+  }, [song?.id, playlistParam]);
 
   const handleDownload = async (song: SongData) => {
     await downloadOfflineAssets(song);
@@ -114,9 +128,6 @@ export default function WatchPageContent() {
 
   const handlePlayPause = () => {
     if (song && globalAudioState.currentSong?.id !== song.id) {
-      if (currentPlaylist?.find((s) => s.id === song.id) === undefined) {
-        initializePlayNextQueue(song, true);
-      }
       playNextSong(song);
     } else {
       togglePlay();
@@ -286,6 +297,7 @@ export default function WatchPageContent() {
                               onClick: () => {
                                 initializePlayNextQueue(song, true);
                                 playNextSong(song);
+                                updateSearchParam("playlist", null);
                               }
                             },
                           ],
@@ -352,6 +364,7 @@ export default function WatchPageContent() {
                   if (!song) return;
                   initializePlayNextQueue(song, true);
                   playNextSong(song);
+                  updateSearchParam("playlist", null);
                 }}
                 className="lg:hidden"
               >
@@ -372,15 +385,21 @@ export default function WatchPageContent() {
 
         <div className="w-full lg:w-1/3 flex flex-col overflow-auto">
           <SongPlaylist
-            title="Current playlist"
+            title={(playlistParam ?? "Current playlist") + (differentFromSaved ? " *" : "")}
+            titleClassName={differentFromSaved ? "italic" : ""}
             songs={currentPlaylist}
             enableReorder={true}
             onReorder={(newSongs) => setCurrentPlaylist(newSongs as SongData[])}
             buttons={
               <>
-                {/* <Button onClick={() => { }}> */}
-                {/*   Save */}
-                {/* </Button> */}
+                <SavePlaylistButton
+                  playlistParam={playlistParam}
+                  onSave={(playlistName, _) => {
+                    updateSearchParam("playlist", playlistName);
+                    setDifferentFromSaved(false);
+                  }}
+                  className={playlistParam && !differentFromSaved ? "hidden" : ""}
+                />
                 <Toggle pressed={loopEnabled} onPressedChange={(pressed) => setLoopEnabled(pressed)} className="aria-pressed:bg-foreground aria-pressed:text-background">
                   <Repeat />
                 </Toggle>

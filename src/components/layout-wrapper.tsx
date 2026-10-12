@@ -3,7 +3,7 @@
 import { SongPlaylist } from "@/components/playlist/song-playlist";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Separator } from "@/components/ui/separator"
-import { useDownloadedSongs } from "@/hooks/use-downloaded-songs";
+import { useSongsList } from "@/context/songs-list-context";
 import { Menu, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -21,7 +21,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const { songs: downloadedSongs } = useDownloadedSongs();
+  const { songsList: downloadedSongs } = useSongsList("downloaded_songs");
 
   return (
     <div className="bg-background text-foreground h-screen flex flex-col relative overflow-hidden">

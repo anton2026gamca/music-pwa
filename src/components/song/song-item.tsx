@@ -9,6 +9,8 @@ import { formatDuration } from '@/lib/utils';
 import { memo, useEffect, useState } from 'react';
 import { getOfflineAssets, OfflineAssets, revokeBlobUrls } from '@/lib/download-utils';
 import { Skeleton } from '../ui/skeleton';
+import { usePathname } from 'next/navigation';
+import useSearchParamsHelpers from '@/hooks/use-search-params-helper';
 
 interface SongItemProps {
   song: SongData | null;
@@ -39,6 +41,9 @@ function SongItemImpl({ song, progress = null, isActive = null, onClickOverride,
       </ItemActions>
     </Item>
   )
+
+  const pathname = usePathname();
+  const { getUpdatedSearchParams } = useSearchParamsHelpers();
 
   const [mounted, setMounted] = useState(false);
 
@@ -74,6 +79,8 @@ function SongItemImpl({ song, progress = null, isActive = null, onClickOverride,
     };
   }, [song?.id]);
 
+  const href = pathname === "/watch" ? `?${getUpdatedSearchParams("id", songId)}` : `/watch?id=${songId}`;
+
   if (!mounted) return (
     <Item className="h-16 p-0 pr-3 border border-b-border rounded-none overflow-hidden group hover:bg-card hover:cursor-pointer relative">
       <ItemMedia className="h-full translate-0! p-1.5">
@@ -93,7 +100,7 @@ function SongItemImpl({ song, progress = null, isActive = null, onClickOverride,
         {duration && (<span className="text-muted-foreground text-[14px] group-hover:hidden">{duration}</span>)}
         <ArrowRight className="hidden group-hover:block" />
       </ItemActions>
-      <Link href={`/watch?id=${songId}`} className="absolute inset-0 z-10 opacity-0">
+      <Link href={href} className="absolute inset-0 z-10 opacity-0">
         Play
       </Link>
     </Item>
@@ -132,7 +139,7 @@ function SongItemImpl({ song, progress = null, isActive = null, onClickOverride,
         </span>
       </ItemActions>
       <Link
-        href={`/watch?id=${songId}`}
+        href={href}
         className="absolute inset-0 z-10 opacity-0"
         onClick={(e) => {
           if (onClickOverride) {
