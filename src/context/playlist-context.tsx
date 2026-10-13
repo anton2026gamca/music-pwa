@@ -97,29 +97,32 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
 
       if (!online) return;
 
-      const suggestionsId = song?.id ?? lastSongId ?? playlist?.[playlist.length - 1]?.id ?? null;
-      const currentPlaylist = newPlaylist ?? playlist;
-      const suggestions = (
-        suggestionsId
-          ? await getPlayNextSuggestions(suggestionsId)
-          : null
-      )?.filter(
-        (s) => !currentPlaylist || currentPlaylist.find((song) => song.id === s.id) === undefined
-      );
-      // console.log(`Fetched play next suggestions for song ID: ${suggestionsId}`);
+      if (reset || !playNextList || playNextList.length < 5) {
+        const suggestionsId = song?.id ?? lastSongId ?? playlist?.[playlist.length - 1]?.id ?? null;
+        const currentPlaylist = newPlaylist ?? playlist;
+        const suggestions = (
+          suggestionsId
+            ? await getPlayNextSuggestions(suggestionsId)
+            : null
+        )?.filter(
+          (s) => !currentPlaylist || currentPlaylist.find((song) => song.id === s.id) === undefined
+        );
+        // console.log(`Fetched play next suggestions for song ID: ${suggestionsId}`);
 
-      setPlayNextList((prev) => {
-        return reset || !prev
-          ? suggestions ?? []
-          : [...prev, ...suggestions ?? []];
-      });
+        setPlayNextList((prev) => {
+          return reset || !prev
+            ? suggestions ?? []
+            : [...prev, ...suggestions ?? []];
+        });
+      }
+
       setInitialized(true);
     } catch (error) {
       console.error("Failed to load play next queue", error);
     } finally {
       setLoading(false);
     }
-  }, [currentSong, playlist, getPlayNextSuggestions]);
+  }, [currentSong, playlist, playNextList, getPlayNextSuggestions]);
 
   const getNextSong = useCallback(() => {
     const playlistIndex = playlist?.findIndex((song) => song.id === currentSong?.id) ?? -1;
@@ -155,6 +158,8 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
   }, [currentSong]);
 
   const playNextSong = useCallback(async (songOverride?: SongData) => {
+    console.log("Attempting to play next song...", { songOverride, currentSong, playlist, playNextList });
+
     const playlistIndex = playlist?.findIndex((song) => song.id === currentSong?.id) ?? -1;
     const isLast = !playlist || playlist.length === 0 || playlistIndex === playlist?.length - 1;
 
@@ -167,7 +172,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
         ? playlist?.[0] ?? null
         : playNextList?.[0] ?? null;
     } else {
-      playlist[playlistIndex + 1];
+      next = playlist[playlistIndex + 1];
     }
 
     if (!next) return;

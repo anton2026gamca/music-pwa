@@ -128,6 +128,7 @@ export default function WatchPageContent() {
 
   const handlePlayPause = () => {
     if (song && globalAudioState.currentSong?.id !== song.id) {
+      initializePlayNextQueue(song);
       playNextSong(song);
     } else {
       togglePlay();
