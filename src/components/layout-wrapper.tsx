@@ -3,16 +3,23 @@
 import { SongPlaylist } from "@/components/playlist/song-playlist";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Separator } from "@/components/ui/separator"
-import { useSongsList } from "@/context/songs-list-context";
+import { useSongsList, useSongsListContext } from "@/context/songs-list-context";
 import { Menu, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { PlaylistItem } from "./playlist/playlist-item";
 
 const SearchBar = dynamic(() => import('@/components/search/search-bar'), { ssr: false });
 
 export function LayoutWrapper({ children }: { children: React.ReactNode }) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, [])
+
   const router = useRouter();
 
   const handleInitialSearchSubmit = (query: string) => {
@@ -22,6 +29,8 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const { songsList: downloadedSongs } = useSongsList("downloaded_songs");
+
+  const { getSavedLists: getSavedPlaylists } = useSongsListContext();
 
   return (
     <div className="bg-background text-foreground h-screen flex flex-col relative overflow-hidden">
@@ -68,7 +77,12 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
             <Link href="/" className="font-medium text-[18px]">Music PWA</Link>
           </div>
 
-          <SongPlaylist title="Downloaded Songs" songs={downloadedSongs} />
+          {/* <SongPlaylist title="Downloaded Songs" songs={downloadedSongs} /> */}
+
+          <PlaylistItem playlistKey="downloaded_songs" />
+          {isMounted && getSavedPlaylists().map((key) => (
+            <PlaylistItem key={key} playlistKey={key} />
+          ))}
 
           <Separator orientation="vertical" className="h-auto min-h-full absolute right-0 top-0" />
         </div>

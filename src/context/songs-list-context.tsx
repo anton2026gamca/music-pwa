@@ -12,6 +12,7 @@ interface SongsContextType {
   removeSong: (listKey: string, id: string) => void;
   includesSong: (listKey: string, key: string) => boolean;
   getSongData: (id: string) => SongData | null;
+  getSavedLists: () => string[];
 }
 
 const SongsContext = createContext<SongsContextType | undefined>(undefined);
@@ -69,8 +70,12 @@ export function SongsListProvider({ children }: { children: React.ReactNode }) {
 
   const includesSong = (listKey: string, key: string) => state[listKey]?.includes(key) ?? false;
 
+  const getSavedLists = () => {
+    return Object.keys(state).filter((key) => !["current_playlist", "downloaded_songs"].includes(key) && state[key]?.length > 0);
+  };
+
   return (
-    <SongsContext.Provider value={{ saveList, getSongsList, addSong, removeSong, includesSong, getSongData }}>
+    <SongsContext.Provider value={{ saveList, getSongsList, addSong, removeSong, includesSong, getSongData, getSavedLists }}>
       {children}
     </SongsContext.Provider>
   );

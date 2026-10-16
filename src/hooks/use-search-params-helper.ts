@@ -1,12 +1,11 @@
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function useSearchParamsHelpers() {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   const getUpdatedSearchParams = (key: string, value: string | null) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(window.location.search);
 
     if (value) {
       params.set(key, value);
@@ -15,11 +14,14 @@ export default function useSearchParamsHelpers() {
     }
 
     return params.toString();
-  }
+  };
 
   const updateSearchParam = (key: string, value: string | null) => {
     const updated = getUpdatedSearchParams(key, value);
-    router.replace(`${pathname}?${updated}`, { scroll: false });
+    console.log("Updated search params:", updated);
+
+    const queryString = updated ? `?${updated}` : '';
+    router.replace(`${pathname}${queryString}`, { scroll: false });
   };
 
   return { getUpdatedSearchParams, updateSearchParam };
