@@ -8,7 +8,7 @@ import { memo, useEffect, useState } from 'react';
 import { getOfflineAssets, OfflineAssets, revokeBlobUrls } from '@/lib/download-utils';
 import { Skeleton } from '../ui/skeleton';
 import { useSongsListContext } from '@/context/songs-list-context';
-import { formatPlaylistKey } from '@/lib/utils';
+import { formatPlaylistKey, getPlaylistCustomIcon } from '@/lib/playlist-utils';
 
 interface PlaylistItemProps {
   playlistKey: string;
@@ -16,10 +16,6 @@ interface PlaylistItemProps {
   onClickOverride?: () => void;
   iconOverride?: React.JSX.Element;
 }
-
-const customIconMap: Record<string, React.JSX.Element> = {
-  downloaded_songs: (<Download className="size-6 text-muted-foreground" />),
-};
 
 function PlaylistItemImpl({ playlistKey, isActive = null, onClickOverride, iconOverride }: PlaylistItemProps) {
   const { getSongsList, getSongData } = useSongsListContext();
@@ -36,7 +32,8 @@ function PlaylistItemImpl({ playlistKey, isActive = null, onClickOverride, iconO
 
   const thumbnailUrl = offlineAssets?.thumbnailUrl ?? firstSongData?.thumbnailUrl ?? '';
   const displayName = formatPlaylistKey(playlistKey);
-  const hasCustomIcon = !!customIconMap[playlistKey];
+  const customIcon = getPlaylistCustomIcon(playlistKey);
+  const hasCustomIcon = !!customIcon;
 
   useEffect(() => {
     if (!firstSongId || hasCustomIcon) {
@@ -94,8 +91,8 @@ function PlaylistItemImpl({ playlistKey, isActive = null, onClickOverride, iconO
     >
       <ItemMedia className="h-full translate-0! p-1.5">
         <div className="aspect-square relative h-full bg-muted flex items-center justify-center">
-          {customIconMap[playlistKey] ? (
-            customIconMap[playlistKey]
+          {hasCustomIcon ? (
+            customIcon
           ) : thumbnailUrl ? (
             <Image
               src={thumbnailUrl}

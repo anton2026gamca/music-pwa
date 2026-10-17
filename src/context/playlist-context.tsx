@@ -9,7 +9,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { OfflineAssets, revokeBlobUrls } from '@/lib/download-utils';
 import { useSongsListContext } from './songs-list-context';
 import { fetchSongsData } from '@/hooks/use-fetch-song-data';
-import useSearchParamsHelpers from '@/hooks/use-search-params-helper';
+import { useSearchParamsHelpers } from '@/hooks/use-search-params-helpers';
 
 interface PlayNextContextType {
   initialized: boolean;

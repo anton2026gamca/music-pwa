@@ -5,7 +5,7 @@ import { Separator } from "../ui/separator";
 import { usePlaylist } from "@/context/playlist-context";
 import { SongData } from "@/app/api/actions";
 import { SongPlaylist } from "./song-playlist";
-import { Plus } from "lucide-react";
+import { Play, Plus } from "lucide-react";
 
 export function PlayNextList() {
   const {
@@ -52,9 +52,23 @@ export function PlayNextList() {
           <SongPlaylist
             songs={playNextList}
             onClickOverrides={onClickOverrides}
-            iconOverrides={onClickOverrides?.map(() => <Plus />) ?? null}
+            iconOverrides={onClickOverrides?.map(() => <Play className="fill-current stroke-none" />) ?? null}
             enableReorder={true}
             onReorder={(newSongs) => setPlayNextList(newSongs as SongData[])}
+            getMenu={(song, _) => {
+              return [
+                {
+                  fields: [
+                    {
+                      label: "Remove from Play Next",
+                      onClick: () => {
+                        setPlayNextList(playNextList.filter((s) => !song || s.id !== song?.id) ?? []);
+                      }
+                    }
+                  ]
+                }
+              ];
+            }}
           />
         )}
       </div>

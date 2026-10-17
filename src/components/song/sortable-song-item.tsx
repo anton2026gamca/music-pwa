@@ -14,6 +14,14 @@ interface SortableSongItemProps {
   isActive?: boolean;
   onClickOverride?: () => void;
   iconOverride?: React.JSX.Element;
+  menu?: Array<{
+    label?: string;
+    fields: Array<{
+      label: string;
+      onClick: () => void;
+      disabled?: boolean;
+    }>
+  }>;
 }
 
 function SortableSongItemImpl({
@@ -23,6 +31,7 @@ function SortableSongItemImpl({
   isActive,
   onClickOverride,
   iconOverride,
+  menu,
 }: SortableSongItemProps) {
   const {
     attributes,
@@ -59,6 +68,7 @@ function SortableSongItemImpl({
           isActive={isActive}
           onClickOverride={onClickOverride}
           iconOverride={iconOverride}
+          menu={menu}
         />
       </div>
     </div>

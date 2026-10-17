@@ -35,6 +35,14 @@ interface SongPlaylistProps {
   onClickOverrides?: Array<(() => void) | null> | null;
   iconOverrides?: Array<React.JSX.Element | null> | null;
   buttons?: React.ReactNode;
+  getMenu?: (song: SongData | null, index: number) => Array<{
+    label?: string;
+    fields: Array<{
+      label: string;
+      onClick: () => void;
+      disabled?: boolean;
+    }>
+  }>;
 }
 
 function getSongKey(song: string | SongData, index: number) {
@@ -50,6 +58,7 @@ export function SongPlaylist({
   onClickOverrides,
   iconOverrides,
   buttons,
+  getMenu,
 }: SongPlaylistProps) {
   const [isOpen, setIsOpen] = useState(true);
   const { state: audioState } = useAudio();
@@ -154,6 +163,7 @@ export function SongPlaylist({
                 isActive={!!progress}
                 onClickOverride={onClickOverrides?.[i] ?? undefined}
                 iconOverride={iconOverrides?.[i] ?? undefined}
+                menu={getMenu?.(song, i) ?? undefined}
               />
             );
           })}
@@ -186,6 +196,7 @@ export function SongPlaylist({
                     isActive={!!progress}
                     onClickOverride={onClickOverrides?.[i] ?? undefined}
                     iconOverride={iconOverrides?.[i] ?? undefined}
+                    menu={getMenu?.(song, i) ?? undefined}
                   />
                 );
               })}

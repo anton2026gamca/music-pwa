@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -27,7 +27,7 @@ import { useOfflineAssets } from "@/hooks/use-offline-assets";
 import { OfflineAssets, revokeBlobUrls } from "@/lib/download-utils";
 import { Toggle } from "@/components/ui/toggle";
 import { SavePlaylistButton } from "./_components/save-playlist-button";
-import useSearchParamsHelpers from "@/hooks/use-search-params-helper";
+import { useSearchParamsHelpers } from "@/hooks/use-search-params-helpers";
 
 export default function WatchPageContent() {
   const [isMounted, setIsMounted] = useState(false);

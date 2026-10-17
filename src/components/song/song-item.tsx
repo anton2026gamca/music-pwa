@@ -10,7 +10,8 @@ import { memo, useEffect, useState } from 'react';
 import { getOfflineAssets, OfflineAssets, revokeBlobUrls } from '@/lib/download-utils';
 import { Skeleton } from '../ui/skeleton';
 import { usePathname } from 'next/navigation';
-import useSearchParamsHelpers from '@/hooks/use-search-params-helper';
+import { useSearchParamsHelpers } from '@/hooks/use-search-params-helpers';
+import { ThreeDotMenu } from '../ui/three-dot-menu';
 
 interface SongItemProps {
   song: SongData | null;
@@ -18,9 +19,17 @@ interface SongItemProps {
   isActive?: boolean | null;
   onClickOverride?: () => void;
   iconOverride?: React.JSX.Element;
+  menu?: Array<{
+    label?: string;
+    fields: Array<{
+      label: string;
+      onClick: () => void;
+      disabled?: boolean;
+    }>
+  }>
 }
 
-function SongItemImpl({ song, progress = null, isActive = null, onClickOverride, iconOverride }: SongItemProps) {
+function SongItemImpl({ song, progress = null, isActive = null, onClickOverride, iconOverride, menu }: SongItemProps) {
   if (song === null) return (
     <Item className="h-16 p-0 pr-3 border border-b-border rounded-none overflow-hidden group hover:bg-card hover:cursor-pointer relative">
       <ItemMedia className="h-full translate-0! p-1.5">
@@ -137,6 +146,7 @@ function SongItemImpl({ song, progress = null, isActive = null, onClickOverride,
         <span className="hidden group-hover:block">
           {iconOverride ? iconOverride : <ArrowRight />}
         </span>
+        {menu && <ThreeDotMenu groups={menu} className="z-20 hover:bg-input!" />}
       </ItemActions>
       <Link
         href={href}

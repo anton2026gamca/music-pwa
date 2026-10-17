@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { MoreVertical } from "lucide-react";
+import { cn } from "@/lib/utils"
 
 interface ThreeDotMenuProps {
   groups: Array<{
@@ -21,13 +22,14 @@ interface ThreeDotMenuProps {
       disabled?: boolean;
     }>
   }>;
+  className?: string;
 }
 
-export function ThreeDotMenu({ groups }: ThreeDotMenuProps) {
+export function ThreeDotMenu({ groups, className }: ThreeDotMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={
-        <Button variant="ghost" size="icon" className="size-10 rounded-xl">
+        <Button variant="ghost" size="icon" className={cn("size-10 rounded-xl", className)}>
           <MoreVertical className="size-5" />
         </Button>
       } />
