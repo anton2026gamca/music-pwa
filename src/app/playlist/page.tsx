@@ -5,19 +5,21 @@ import { Separator } from "@/components/ui/separator";
 import { useSongsListContext } from "@/context/songs-list-context";
 import { getOfflineAssets, OfflineAssets, revokeBlobUrls } from "@/lib/download-utils";
 import { formatPlaylistKey, getPlaylistCustomIcon } from "@/lib/playlist-utils";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Music, Play } from "lucide-react";
+import { Music, Play, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SongPlaylist } from "@/components/playlist/song-playlist";
 import { usePlaylist } from "@/context/playlist-context";
+import { DialogButton } from "@/components/ui/dialog-button";
 
 export default function PlaylistPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const playlistKey = searchParams.get("id") ?? "current_playlist";
 
-  const { getSongsList, getSongData, saveList } = useSongsListContext();
+  const { getSongsList, getSongData, saveList, removeSong, deleteList } = useSongsListContext();
 
   const [mounted, setMounted] = useState(false);
   const [offlineAssets, setOfflineAssets] = useState<OfflineAssets | null>(null);
@@ -103,19 +105,35 @@ export default function PlaylistPage() {
             <p className="text-sm text-muted-foreground font-medium">
               {songCountText}
             </p>
-            {totalSongs > 0 && (
-              <div className="pt-2">
+            {totalSongs > 0 ? (
+              <div className="pt-2 flex gap-2">
                 <Button
                   className="rounded-full gap-2" size="lg"
                   onClick={() => {
                     initializeQueue(null, true, playlistKey);
                     playNextSong(firstSongData ?? undefined);
+                    router.push(`/watch?id=${firstSongId}&playlist=${playlistKey}`);
                   }}
                 >
-                  <Play className="w-5 h-5 fill-current" />
+                  <Play className="size-5 fill-current stroke-none" />
                   Play
                 </Button>
+                {!["downloaded_songs", "current_playlist"].includes(playlistKey) && (
+                  <DialogButton
+                    className="rounded-full gap-2" size="lg"
+                    variant="destructive"
+                    onConfirm={() => {
+                      deleteList(playlistKey);
+                    }}
+                    dialogDescription={`Are you sure you want to delete playlist "${displayName}"?`}
+                    confirmText="Delete"
+                  >
+                    <Trash className="size-5" /> Delete Playlist
+                  </DialogButton>
+                )}
               </div>
+            ) : (
+              <div className="min-h-8"></div>
             )}
           </div>
         </div>
@@ -133,6 +151,25 @@ export default function PlaylistPage() {
               songs={songIds}
               enableReorder={true}
               onReorder={handlePlaylistReorder}
+              getMenu={(song) => {
+                if (["current_playlist", "downloaded_songs"].includes(playlistKey)) {
+                  return null;
+                }
+
+                return [
+                  {
+                    fields: [
+                      {
+                        label: "Remove from Playlist",
+                        onClick: () => {
+                          if (!song) return;
+                          removeSong(playlistKey, song.id);
+                        },
+                      },
+                    ],
+                  },
+                ];
+              }}
             />
           )}
         </div>

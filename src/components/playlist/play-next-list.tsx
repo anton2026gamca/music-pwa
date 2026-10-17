@@ -55,7 +55,7 @@ export function PlayNextList() {
             iconOverrides={onClickOverrides?.map(() => <Play className="fill-current stroke-none" />) ?? null}
             enableReorder={true}
             onReorder={(newSongs) => setPlayNextList(newSongs as SongData[])}
-            getMenu={(song, _) => {
+            getMenu={(song) => {
               return [
                 {
                   fields: [

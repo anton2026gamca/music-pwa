@@ -35,7 +35,7 @@ interface SongPlaylistProps {
   onClickOverrides?: Array<(() => void) | null> | null;
   iconOverrides?: Array<React.JSX.Element | null> | null;
   buttons?: React.ReactNode;
-  getMenu?: (song: SongData | null, index: number) => Array<{
+  getMenu?: (song: SongData | null, index: number) => null | Array<{
     label?: string;
     fields: Array<{
       label: string;

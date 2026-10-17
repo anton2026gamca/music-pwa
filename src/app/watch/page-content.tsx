@@ -26,8 +26,9 @@ import { useOnline } from "@/hooks/use-online";
 import { useOfflineAssets } from "@/hooks/use-offline-assets";
 import { OfflineAssets, revokeBlobUrls } from "@/lib/download-utils";
 import { Toggle } from "@/components/ui/toggle";
-import { SavePlaylistButton } from "./_components/save-playlist-button";
 import { useSearchParamsHelpers } from "@/hooks/use-search-params-helpers";
+import { DialogButton } from "@/components/ui/dialog-button";
+import { useSongsListContext } from "@/context/songs-list-context";
 
 export default function WatchPageContent() {
   const [isMounted, setIsMounted] = useState(false);
@@ -76,6 +77,8 @@ export default function WatchPageContent() {
   } = usePlaylist();
   const [loadedOfflineAssets, setLoadedOfflineAssets] = useState<OfflineAssets | null>(null);
   const offlineAssets = loadedOfflineAssets ?? playlistOfflineAssets;
+
+  const { saveList: savePlaylist } = useSongsListContext()
 
   const [audioReady, setAudioReady] = useState(false);
 
@@ -393,14 +396,38 @@ export default function WatchPageContent() {
             onReorder={(newSongs) => setCurrentPlaylist(newSongs as SongData[])}
             buttons={
               <>
-                <SavePlaylistButton
-                  playlistParam={playlistParam}
-                  onSave={(playlistName, _) => {
-                    updateSearchParam("playlist", playlistName);
-                    setDifferentFromSaved(false);
-                  }}
+                <DialogButton
                   className={playlistParam && !differentFromSaved ? "hidden" : ""}
-                />
+                  dialogTitle={playlistParam ? "Confirm Saving Changes" : "Enter Playlist Name"}
+                  confirmText={playlistParam ? "Save" : "Save Playlist"}
+                  fields={
+                    playlistParam
+                      ? []
+                      : [
+                        {
+                          id: "playlistName",
+                          label: "Name",
+                          placeholder: "Playlist Name...",
+                          required: true,
+                        },
+                      ]
+                  }
+                  onConfirm={(formValues) => {
+                    const resolvedName = playlistParam
+                      ? playlistParam
+                      : formValues.playlistName.trim().toLowerCase().replace(/\s+/g, "_");
+
+                    const ids = currentPlaylist?.map((song) => song.id)
+
+                    if (resolvedName && ids) {
+                      savePlaylist(resolvedName, ids)
+                      updateSearchParam("playlist", resolvedName);
+                      setDifferentFromSaved(false);
+                    }
+                  }}
+                >
+                  Save
+                </DialogButton>
                 <Toggle pressed={loopEnabled} onPressedChange={(pressed) => setLoopEnabled(pressed)} className="aria-pressed:bg-foreground aria-pressed:text-background">
                   <Repeat />
                 </Toggle>

@@ -3,10 +3,11 @@
 import { SongData } from '@/app/api/actions';
 import { useState, createContext, useContext } from 'react';
 
-type SongsState = Record<string, string[]>;
+type SongsState = Record<string, string[] | undefined>;
 
 interface SongsContextType {
   saveList: (listKey: string, newKeys: string[]) => void;
+  deleteList: (listKey: string) => void;
   getSongsList: (listKey: string) => string[];
   addSong: (listKey: string, song: SongData) => void;
   removeSong: (listKey: string, id: string) => void;
@@ -47,6 +48,12 @@ export function SongsListProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('playlists', JSON.stringify(Object.keys({ ...state, [listKey]: newKeys.length > 0 ? newKeys : undefined }).filter((key) => key !== "current_playlist")));
   };
 
+  const deleteList = (listKey: string) => {
+    setState((prev) => ({ ...prev, [listKey]: undefined }));
+    (listKey === "current_playlist" ? sessionStorage : localStorage).removeItem(getPlaylistKey(listKey));
+    localStorage.setItem('playlists', JSON.stringify(Object.keys({ ...state, [listKey]: undefined }).filter((key) => key !== "current_playlist")));
+  };
+
   const addSong = (listKey: string, song: SongData) => {
     const currentList = state[listKey] ?? [];
     const updated = Array.from(new Set([...currentList, song.id]));
@@ -66,16 +73,16 @@ export function SongsListProvider({ children }: { children: React.ReactNode }) {
     return raw ? JSON.parse(raw) : null;
   };
 
-  const getSongsList = (listKey: string) => state[listKey];
+  const getSongsList = (listKey: string) => state[listKey] ?? [];
 
   const includesSong = (listKey: string, key: string) => state[listKey]?.includes(key) ?? false;
 
   const getSavedLists = () => {
-    return Object.keys(state).filter((key) => !["current_playlist", "downloaded_songs"].includes(key) && state[key]?.length > 0);
+    return Object.keys(state).filter((key) => !["current_playlist", "downloaded_songs"].includes(key) && (state[key]?.length ?? 0) > 0);
   };
 
   return (
-    <SongsContext.Provider value={{ saveList, getSongsList, addSong, removeSong, includesSong, getSongData, getSavedLists }}>
+    <SongsContext.Provider value={{ saveList, deleteList, getSongsList, addSong, removeSong, includesSong, getSongData, getSavedLists }}>
       {children}
     </SongsContext.Provider>
   );
