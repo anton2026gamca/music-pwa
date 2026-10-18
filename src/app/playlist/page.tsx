@@ -4,11 +4,11 @@ import { CurrentlyPlaying } from "@/components/currently-playing";
 import { Separator } from "@/components/ui/separator";
 import { useSongsListContext } from "@/context/songs-list-context";
 import { getOfflineAssets, OfflineAssets, revokeBlobUrls } from "@/lib/download-utils";
-import { formatPlaylistKey, getPlaylistCustomIcon } from "@/lib/playlist-utils";
+import { createPlaylistKey, formatPlaylistKey, getPlaylistCustomIcon } from "@/lib/playlist-utils";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Edit, Music, Play, Shuffle, Trash } from "lucide-react";
+import { Music, Play, Shuffle, TextCursor, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SongPlaylist } from "@/components/playlist/song-playlist";
 import { usePlaylist } from "@/context/playlist-context";
@@ -36,7 +36,7 @@ export default function PlaylistPage() {
   const customIcon = getPlaylistCustomIcon(playlistKey, 16);
   const hasCustomIcon = !!customIcon;
 
-  const { initializeQueue, playNextSong, playlistKey: contextPlaylistKey, setPlaylistKey: setContextPlaylistKey } = usePlaylist();
+  const { initializeQueue, playlistKey: contextPlaylistKey, setPlaylistKey: setContextPlaylistKey } = usePlaylist();
 
   useEffect(() => {
     if (!firstSongId || hasCustomIcon) {
@@ -123,6 +123,42 @@ export default function PlaylistPage() {
                 >
                   <Shuffle className="size-5" /> Shuffle
                 </Button>
+                <DialogButton
+                  className="rounded-full gap-2" size="lg" variant="secondary"
+                  dialogTitle={`Rename Playlist "${displayName}"`}
+                  confirmText="Rename"
+                  fields={[
+                    {
+                      id: "newName",
+                      label: "New Name",
+                      type: "text",
+                      defaultValue: displayName
+                    }
+                  ]}
+                  onConfirm={(formValues) => {
+                    const key = createPlaylistKey(formValues.newName);
+
+                    if (key === playlistKey) {
+                      return;
+                    }
+
+                    if (getSongsList(key).length > 0) {
+                      setTimeout(() => {
+                        window.alert(`A playlist with the key "${key}" already exists. Please choose a different name.`);
+                      }, 0);
+                      return;
+                    }
+
+                    const songs = getSongsList(playlistKey);
+
+                    deleteList(playlistKey);
+                    saveList(key, songs);
+
+                    router.push(`/playlist?id=${encodeURIComponent(key)}`);
+                  }}
+                >
+                  <TextCursor className="size-4" /> Rename
+                </DialogButton>
                 {!["downloaded_songs", "current_playlist"].includes(playlistKey) && (
                   <DialogButton
                     className="rounded-full gap-2" size="lg"

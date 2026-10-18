@@ -8,6 +8,10 @@ export function formatPlaylistKey(key: string): string {
     .join(' ');
 };
 
+export function createPlaylistKey(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, '_');
+}
+
 const playlistCustomIconMap: Record<string, React.JSX.Element> = {
   downloaded_songs: (<Download className="size-6 text-muted-foreground" />),
 };
