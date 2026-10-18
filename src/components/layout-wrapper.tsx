@@ -28,8 +28,6 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const { songsList: downloadedSongs } = useSongsList("downloaded_songs");
-
   const { getSavedLists: getSavedPlaylists } = useSongsListContext();
 
   return (
@@ -76,8 +74,6 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
             </button>
             <Link href="/" className="font-medium text-[18px]">Music PWA</Link>
           </div>
-
-          {/* <SongPlaylist title="Downloaded Songs" songs={downloadedSongs} /> */}
 
           <PlaylistItem playlistKey="downloaded_songs" />
           {isMounted && getSavedPlaylists().map((key) => (

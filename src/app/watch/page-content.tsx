@@ -30,6 +30,7 @@ import { useSearchParamsHelpers } from "@/hooks/use-search-params-helpers";
 import { DialogButton } from "@/components/ui/dialog-button";
 import { useSongsListContext } from "@/context/songs-list-context";
 import { formatPlaylistKey } from "@/lib/playlist-utils";
+import { AddToPlaylistButton } from "./_components/add-to-playlist-button";
 
 export default function WatchPageContent() {
   const [isMounted, setIsMounted] = useState(false);
@@ -79,7 +80,7 @@ export default function WatchPageContent() {
   const [loadedOfflineAssets, setLoadedOfflineAssets] = useState<OfflineAssets | null>(null);
   const offlineAssets = loadedOfflineAssets ?? playlistOfflineAssets;
 
-  const { saveList: savePlaylist } = useSongsListContext()
+  const { saveList: savePlaylist } = useSongsListContext();
 
   const [audioReady, setAudioReady] = useState(false);
 
@@ -350,18 +351,7 @@ export default function WatchPageContent() {
                 <Text /> {!song || !offlineAssets?.lyrics || offlineAssets.lyrics.length === 0 ? "No" : showLyrics && globalAudioState.currentSong?.id === song.id ? "Hide" : "Show"} Lyrics
               </Button>
               <Separator orientation="vertical" className="lg:hidden" />
-              <Button
-                onClick={() => song && addSongToPlaylist(song)}
-                disabled={!song || currentPlaylist?.find((s) => s.id === song.id) !== undefined}
-              >
-                <Plus /> Add to current playlist
-              </Button>
-              <Button
-                onClick={() => song && removeSongFromPlaylist(song.id)}
-                disabled={!song || currentPlaylist?.find((s) => s.id === song.id) === undefined || globalAudioState.currentSong?.id === song.id}
-              >
-                <Trash /> Remove from current playlist
-              </Button>
+              <AddToPlaylistButton song={song} />
               <Button
                 onClick={() => {
                   if (!song) return;

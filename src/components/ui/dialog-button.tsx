@@ -10,6 +10,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "./select"
 
 export interface DialogField {
   id: string
@@ -20,13 +21,23 @@ export interface DialogField {
   required?: boolean
 }
 
+export interface DialogSelectField {
+  id: string
+  label: string
+  placeholder?: string
+  type: "select"
+  defaultValue?: string
+  required?: boolean
+  options: Array<{ label: string; value: string }>
+}
+
 interface ActionButtonProps {
   children?: React.ReactNode;
   dialogTitle?: string
   dialogDescription?: string
   confirmText?: string
   cancelText?: string
-  fields?: DialogField[]
+  fields?: Array<DialogField | DialogSelectField>
   onConfirm: (formValues: Record<string, string>) => void
   className?: string
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
@@ -99,15 +110,32 @@ export function DialogButton({
                   <Label htmlFor={field.id} className="text-right">
                     {field.label}
                   </Label>
-                  <Input
-                    id={field.id}
-                    type={field.type ?? "text"}
-                    placeholder={field.placeholder}
-                    value={formValues[field.id] ?? ""}
-                    onChange={(e) => handleInputChange(field.id, e.target.value)}
-                    className="col-span-3"
-                    autoFocus={fields[0].id === field.id}
-                  />
+                  {field.type === "select" ? (
+                    <Select items={field.options} defaultValue={field.defaultValue}>
+                      <SelectTrigger className="w-full col-span-3">
+                        <SelectValue placeholder={field.placeholder} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {field.options.map((item) => (
+                            <SelectItem key={item.value} value={item.value}>
+                              {item.label}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      id={field.id}
+                      type={field.type ?? "text"}
+                      placeholder={field.placeholder}
+                      value={formValues[field.id] ?? ""}
+                      onChange={(e) => handleInputChange(field.id, e.target.value)}
+                      className="col-span-3"
+                      autoFocus={fields[0].id === field.id}
+                    />
+                  )}
                 </div>
               ))}
             </div>

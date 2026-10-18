@@ -9,15 +9,19 @@ import { getOfflineAssets, OfflineAssets, revokeBlobUrls } from '@/lib/download-
 import { Skeleton } from '../ui/skeleton';
 import { useSongsListContext } from '@/context/songs-list-context';
 import { formatPlaylistKey, getPlaylistCustomIcon } from '@/lib/playlist-utils';
+import { cn } from '@/lib/utils';
+import { Button } from '../ui/button';
 
 interface PlaylistItemProps {
   playlistKey: string;
   isActive?: boolean | null;
   onClickOverride?: () => void;
   iconOverride?: React.JSX.Element;
+  className?: string;
+  songCountTextOverride?: string;
 }
 
-function PlaylistItemImpl({ playlistKey, isActive = null, onClickOverride, iconOverride }: PlaylistItemProps) {
+function PlaylistItemImpl({ playlistKey, isActive = null, onClickOverride, iconOverride, className, songCountTextOverride }: PlaylistItemProps) {
   const { getSongsList, getSongData } = useSongsListContext();
 
   const [mounted, setMounted] = useState(false);
@@ -25,7 +29,7 @@ function PlaylistItemImpl({ playlistKey, isActive = null, onClickOverride, iconO
 
   const songIds = getSongsList(playlistKey) || [];
   const totalSongs = songIds.length;
-  const songCountText = totalSongs === 1 ? '1 song' : `${totalSongs} songs`;
+  const songCountText = songCountTextOverride ? songCountTextOverride : totalSongs === 1 ? '1 song' : `${totalSongs} songs`;
 
   const firstSongId = songIds[0] || null;
   const firstSongData = firstSongId ? getSongData(firstSongId) : null;
@@ -62,10 +66,10 @@ function PlaylistItemImpl({ playlistKey, isActive = null, onClickOverride, iconO
     };
   }, [firstSongId, hasCustomIcon]);
 
-  const href = `/playlist?id=${playlistKey}`;
+  const href = `/playlist?id=${encodeURIComponent(playlistKey)}`;
 
   if (!mounted) return (
-    <Item className="h-16 p-0 pr-3 border border-b-border rounded-none overflow-hidden group hover:bg-card hover:cursor-pointer relative">
+    <Item className={cn("h-16 p-0 pr-3 border border-b-border rounded-none overflow-hidden group hover:bg-card hover:cursor-pointer relative", className)}>
       <ItemMedia className="h-full translate-0! p-1.5">
         <div className="aspect-square relative h-full">
           <Skeleton className="w-full h-full rounded-none" />
@@ -87,7 +91,7 @@ function PlaylistItemImpl({ playlistKey, isActive = null, onClickOverride, iconO
 
   return (
     <Item
-      className={`h-16 p-0 pr-3 ${isActive ? "border border-accent-foreground" : "border-b-border"} rounded-none overflow-hidden group hover:bg-card hover:cursor-pointer relative`}
+      className={cn(`h-16 p-0 pr-3 ${isActive ? "border border-accent-foreground" : "border-b-border"} rounded-none overflow-hidden group hover:bg-card hover:cursor-pointer relative`, className)}
     >
       <ItemMedia className="h-full translate-0! p-1.5">
         <div className="aspect-square relative h-full bg-muted flex items-center justify-center">
@@ -120,18 +124,21 @@ function PlaylistItemImpl({ playlistKey, isActive = null, onClickOverride, iconO
           {iconOverride ? iconOverride : <ArrowRight />}
         </span>
       </ItemActions>
-      <Link
-        href={href}
-        className="absolute inset-0 z-10 opacity-0"
-        onClick={(e) => {
-          if (onClickOverride) {
-            e.preventDefault();
-            onClickOverride();
-          }
-        }}
-      >
-        View
-      </Link>
+      {onClickOverride ? (
+        <Button
+          className="absolute inset-0 z-10 opacity-0"
+          onClick={onClickOverride}
+        >
+          Action
+        </Button>
+      ) : (
+        <Link
+          href={href}
+          className="absolute inset-0 z-10 opacity-0"
+        >
+          View
+        </Link>
+      )}
     </Item>
   );
 }
