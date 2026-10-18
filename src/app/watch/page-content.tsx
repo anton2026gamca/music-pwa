@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Loader2, AlertCircle, Play, ArrowDownToLine, Check, X, Text, WifiOff, Repeat } from "lucide-react";
+import { Loader2, AlertCircle, Play, ArrowDownToLine, Check, X, Text, WifiOff, Repeat, CloudDownload, Plus, Trash } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -29,6 +29,7 @@ import { Toggle } from "@/components/ui/toggle";
 import { useSearchParamsHelpers } from "@/hooks/use-search-params-helpers";
 import { DialogButton } from "@/components/ui/dialog-button";
 import { useSongsListContext } from "@/context/songs-list-context";
+import { formatPlaylistKey } from "@/lib/playlist-utils";
 
 export default function WatchPageContent() {
   const [isMounted, setIsMounted] = useState(false);
@@ -72,7 +73,7 @@ export default function WatchPageContent() {
     removeSong: removeSongFromPlaylist,
     offlineAssets: playlistOfflineAssets,
     loopEnabled, setLoopEnabled,
-    playlistKey,
+    playlistKey, setPlaylistKey,
     differentFromSaved, setDifferentFromSaved,
   } = usePlaylist();
   const [loadedOfflineAssets, setLoadedOfflineAssets] = useState<OfflineAssets | null>(null);
@@ -92,7 +93,7 @@ export default function WatchPageContent() {
     let thumbnailUrl: string | null = null;
 
     if (song) {
-      if (playlistParam && playlistKey !== playlistParam) {
+      if (playlistParam && playlistKey === null) {
         initializePlayNextQueue(null, true, playlistParam);
       }
 
@@ -274,7 +275,7 @@ export default function WatchPageContent() {
                   {!loading && offlineAssets?.songId === song.id && (
                     <div className="flex items-center gap-2">
                       {offlineAssets?.isOffline && (
-                        <Badge className="hidden lg:flex"><ArrowDownToLine />Downloaded</Badge>
+                        <Badge className="hidden lg:flex"><ArrowDownToLine />Offline</Badge>
                       )}
 
                       {offlineAssets?.lyrics && offlineAssets.lyrics.length > 1 ? (
@@ -297,7 +298,7 @@ export default function WatchPageContent() {
                               disabled: currentPlaylist?.find((s) => s.id === song.id) === undefined || globalAudioState.currentSong?.id === song.id,
                             },
                             {
-                              label: "Add to new playlist",
+                              label: "Play in new playlist",
                               onClick: () => {
                                 initializePlayNextQueue(song, true);
                                 playNextSong(song);
@@ -318,7 +319,7 @@ export default function WatchPageContent() {
                         {
                           fields: [
                             {
-                              label: "Download",
+                              label: "Make Available Offline",
                               onClick: () => handleDownload(song),
                               disabled: offlineAssets?.isOffline || videoDownloading || lyricsDownloading || thumbnailDownloading,
                             }
@@ -335,12 +336,12 @@ export default function WatchPageContent() {
           <Separator />
 
           <div className="px-4 mb-4 space-y-4">
-            <div className="flex items-center gap-2 overflow-auto scrollbar-none">
+            <div className="flex lg:flex-wrap items-center gap-2 overflow-auto scrollbar-none">
               <Button
                 disabled={!song || offlineAssets?.songId !== song.id || offlineAssets?.isOffline || videoDownloading || lyricsDownloading || thumbnailDownloading}
                 onClick={() => song && handleDownload(song)}
               >
-                <ArrowDownToLine /> Download
+                <CloudDownload /> Make Available Offline
               </Button>
               <Button
                 onClick={() => setShowLyrics((prev) => !prev)}
@@ -352,16 +353,14 @@ export default function WatchPageContent() {
               <Button
                 onClick={() => song && addSongToPlaylist(song)}
                 disabled={!song || currentPlaylist?.find((s) => s.id === song.id) !== undefined}
-                className="lg:hidden"
               >
-                Add to playlist
+                <Plus /> Add to current playlist
               </Button>
               <Button
                 onClick={() => song && removeSongFromPlaylist(song.id)}
                 disabled={!song || currentPlaylist?.find((s) => s.id === song.id) === undefined || globalAudioState.currentSong?.id === song.id}
-                className="lg:hidden"
               >
-                Remove from playlist
+                <Trash /> Remove from current playlist
               </Button>
               <Button
                 onClick={() => {
@@ -370,9 +369,8 @@ export default function WatchPageContent() {
                   playNextSong(song);
                   updateSearchParam("playlist", null);
                 }}
-                className="lg:hidden"
               >
-                Add to new playlist
+                <Play className="fill-current stroke-none" /> Play in new playlist
               </Button>
             </div>
             <MobileSongControls
@@ -389,19 +387,35 @@ export default function WatchPageContent() {
 
         <div className="w-full lg:w-1/3 flex flex-col overflow-auto">
           <SongPlaylist
-            title={(playlistParam ?? "Current playlist") + (differentFromSaved ? " *" : "")}
+            title={(formatPlaylistKey(playlistKey ?? "current_playlist")) + (differentFromSaved ? " *" : "")}
             titleClassName={differentFromSaved ? "italic" : ""}
             songs={currentPlaylist}
             enableReorder={true}
             onReorder={(newSongs) => setCurrentPlaylist(newSongs as SongData[])}
+            getMenu={(song) => {
+              return [
+                {
+                  fields: [
+                    {
+                      label: "Remove from Playlist",
+                      onClick: () => {
+                        if (song) {
+                          removeSongFromPlaylist(song.id);
+                        }
+                      }
+                    }
+                  ],
+                },
+              ];
+            }}
             buttons={
               <>
                 <DialogButton
-                  className={playlistParam && !differentFromSaved ? "hidden" : ""}
-                  dialogTitle={playlistParam ? "Confirm Saving Changes" : "Enter Playlist Name"}
-                  confirmText={playlistParam ? "Save" : "Save Playlist"}
+                  className={playlistKey && !differentFromSaved ? "hidden" : ""}
+                  dialogTitle={playlistKey ? "Confirm Saving Changes" : "Enter Playlist Name"}
+                  confirmText={playlistKey ? "Save" : "Save Playlist"}
                   fields={
-                    playlistParam
+                    playlistKey
                       ? []
                       : [
                         {
@@ -413,15 +427,15 @@ export default function WatchPageContent() {
                       ]
                   }
                   onConfirm={(formValues) => {
-                    const resolvedName = playlistParam
-                      ? playlistParam
+                    const resolvedName = playlistKey
+                      ? playlistKey
                       : formValues.playlistName.trim().toLowerCase().replace(/\s+/g, "_");
 
                     const ids = currentPlaylist?.map((song) => song.id)
 
                     if (resolvedName && ids) {
                       savePlaylist(resolvedName, ids)
-                      updateSearchParam("playlist", resolvedName);
+                      setPlaylistKey(resolvedName);
                       setDifferentFromSaved(false);
                     }
                   }}

@@ -8,7 +8,7 @@ import { formatPlaylistKey, getPlaylistCustomIcon } from "@/lib/playlist-utils";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Music, Play, Trash } from "lucide-react";
+import { Edit, Music, Play, Shuffle, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SongPlaylist } from "@/components/playlist/song-playlist";
 import { usePlaylist } from "@/context/playlist-context";
@@ -36,7 +36,7 @@ export default function PlaylistPage() {
   const customIcon = getPlaylistCustomIcon(playlistKey, 16);
   const hasCustomIcon = !!customIcon;
 
-  const { initializeQueue, playNextSong } = usePlaylist();
+  const { initializeQueue, playNextSong, playlistKey: contextPlaylistKey, setPlaylistKey: setContextPlaylistKey } = usePlaylist();
 
   useEffect(() => {
     if (!firstSongId || hasCustomIcon) {
@@ -110,13 +110,18 @@ export default function PlaylistPage() {
                 <Button
                   className="rounded-full gap-2" size="lg"
                   onClick={() => {
-                    initializeQueue(null, true, playlistKey);
-                    playNextSong(firstSongData ?? undefined);
-                    router.push(`/watch?id=${firstSongId}&playlist=${playlistKey}`);
+                    initializeQueue(null, true, playlistKey, true);
                   }}
                 >
-                  <Play className="size-5 fill-current stroke-none" />
-                  Play
+                  <Play className="size-5 fill-current stroke-none" /> Play
+                </Button>
+                <Button
+                  className="rounded-full gap-2" size="lg" variant="secondary"
+                  onClick={() => {
+                    initializeQueue(null, true, playlistKey, true, true);
+                  }}
+                >
+                  <Shuffle className="size-5" /> Shuffle
                 </Button>
                 {!["downloaded_songs", "current_playlist"].includes(playlistKey) && (
                   <DialogButton
@@ -124,6 +129,9 @@ export default function PlaylistPage() {
                     variant="destructive"
                     onConfirm={() => {
                       deleteList(playlistKey);
+                      if (playlistKey === contextPlaylistKey) {
+                        setContextPlaylistKey(null);
+                      }
                     }}
                     dialogDescription={`Are you sure you want to delete playlist "${displayName}"?`}
                     confirmText="Delete"

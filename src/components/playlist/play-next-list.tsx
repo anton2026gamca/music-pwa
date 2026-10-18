@@ -15,6 +15,7 @@ export function PlayNextList() {
     autoplayNext: enabled,
     setAutoplayNext: setEnabled,
     loopEnabled,
+    initializeQueue,
   } = usePlaylist();
   const [onClickOverrides, setOnClickOverrides] = useState<Array<(() => void) | null> | null>(null);
 
@@ -63,10 +64,17 @@ export function PlayNextList() {
                       label: "Remove from Play Next",
                       onClick: () => {
                         setPlayNextList(playNextList.filter((s) => !song || s.id !== song?.id) ?? []);
-                      }
-                    }
-                  ]
-                }
+                      },
+                    },
+                    {
+                      label: "Play in new playlist",
+                      onClick: () => {
+                        initializeQueue(song, true);
+                        playNextSong(song ?? undefined);
+                      },
+                    },
+                  ],
+                },
               ];
             }}
           />

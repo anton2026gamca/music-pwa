@@ -5,11 +5,12 @@ import { createContext, useContext, useState, ReactNode, useCallback, useEffect 
 import { useAudio } from './audio-context';
 import { useOnline } from '@/hooks/use-online';
 import { useOfflineAssets } from '@/hooks/use-offline-assets';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { OfflineAssets, revokeBlobUrls } from '@/lib/download-utils';
 import { useSongsListContext } from './songs-list-context';
 import { fetchSongsData } from '@/hooks/use-fetch-song-data';
 import { useSearchParamsHelpers } from '@/hooks/use-search-params-helpers';
+import { shufflePlaylist } from '@/lib/utils';
 
 interface PlayNextContextType {
   initialized: boolean;
@@ -19,7 +20,7 @@ interface PlayNextContextType {
   setPlaylist: (songs: SongData[] | null) => void;
   playNextList: SongData[] | null;
   setPlayNextList: (songs: SongData[] | null) => void;
-  initializeQueue: (currentSong: SongData | null, reset?: boolean, playlistKey?: string) => Promise<void>;
+  initializeQueue: (currentSong: SongData | null, reset?: boolean, playlistKey?: string, autoplay?: boolean, shuffle?: boolean) => Promise<void>;
   getNextSong: () => SongData | null;
   getPrevSong: () => SongData | null;
   addSong: (song: SongData) => void;
@@ -41,6 +42,7 @@ const PlaylistContext = createContext<PlayNextContextType | undefined>(undefined
 
 export function PlaylistProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { updateSearchParam } = useSearchParamsHelpers();
 
@@ -62,12 +64,12 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
   const [offlineAssets, setOfflineAssets] = useState<OfflineAssets | null>(null);
   const { loadAssets } = useOfflineAssets();
 
-  const initializeQueue = useCallback(async (song: SongData | null = null, reset: boolean = false, playlistKey: string | null = null) => {
+  const initializeQueue = useCallback(async (song: SongData | null = null, reset: boolean = false, playlistKey: string | null = null, autoplay: boolean = false, shuffle: boolean = false) => {
     setLoading(true);
 
     try {
       let lastSongId = null;
-      let newPlaylist = null;
+      let newPlaylist: SongData[] | null = null;
 
       if (reset || !playlist || playlist.length === 0) {
         if (playlistKey) {
@@ -76,13 +78,21 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
 
           if (song && !songs.find((s) => s.id === song.id)) {
             newPlaylist = [...songs, song];
-            setPlaylist(newPlaylist);
+            if (shuffle) {
+              newPlaylist = shufflePlaylist(newPlaylist);
+            }
             setDifferentFromSaved(true);
+            setPlaylist(newPlaylist);
             lastSongId = song.id;
           } else {
             newPlaylist = songs;
+            if (shuffle) {
+              newPlaylist = shufflePlaylist(newPlaylist);
+              setDifferentFromSaved(true);
+            } else {
+              setDifferentFromSaved(false);
+            }
             setPlaylist(newPlaylist);
-            setDifferentFromSaved(false);
             lastSongId = songs.length > 0 ? songs[songs.length - 1].id : null;
           }
 
@@ -95,26 +105,42 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      if (!online) return;
-
-      if (reset || !playNextList || playNextList.length < 5) {
-        const suggestionsId = song?.id ?? lastSongId ?? playlist?.[playlist.length - 1]?.id ?? null;
-        const currentPlaylist = newPlaylist ?? playlist;
-        const suggestions = (
-          suggestionsId
-            ? await getPlayNextSuggestions(suggestionsId)
-            : null
-        )?.filter(
-          (s) => !currentPlaylist || currentPlaylist.find((song) => song.id === s.id) === undefined
-        );
-        // console.log(`Fetched play next suggestions for song ID: ${suggestionsId}`);
-
-        setPlayNextList((prev) => {
-          return reset || !prev
-            ? suggestions ?? []
-            : [...prev, ...suggestions ?? []];
-        });
+      const play = async () => {
+        const autoplaySong = song ?? (newPlaylist ?? playlist)?.[0] ?? null;
+        if (autoplay && autoplaySong) {
+          const assets = await loadAssets(autoplaySong);
+          if (!assets) return;
+          setOfflineAssets(assets);
+          playSong(assets.songUrl, autoplaySong);
+          sessionStorage.setItem(`song_${autoplaySong.id}`, JSON.stringify(autoplaySong));
+          router.push(`/watch?id=${autoplaySong.id}`);
+        }
       }
+
+      const loadPlayNext = async () => {
+        if (!online) return;
+
+        if (reset || !playNextList || playNextList.length < 5) {
+          const currentPlaylist = newPlaylist ?? playlist;
+          const suggestionsId = song?.id ?? lastSongId ?? playlist?.[playlist.length - 1]?.id ?? null;
+          const suggestions = (
+            suggestionsId
+              ? await getPlayNextSuggestions(suggestionsId)
+              : null
+          )?.filter(
+            (s) => !currentPlaylist || currentPlaylist.find((song) => song.id === s.id) === undefined
+          );
+          // console.log(`Fetched play next suggestions for song ID: ${suggestionsId}`);
+
+          setPlayNextList((prev) => {
+            return reset || !prev
+              ? suggestions ?? []
+              : [...prev, ...suggestions ?? []];
+          });
+        }
+      }
+
+      await Promise.all([play(), loadPlayNext()]);
 
       setInitialized(true);
     } catch (error) {
