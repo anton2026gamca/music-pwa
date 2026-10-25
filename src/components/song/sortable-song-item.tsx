@@ -9,7 +9,7 @@ import { SongItem } from "./song-item";
 
 interface SortableSongItemProps {
   id: string;
-  song: SongData | null;
+  song: SongData;
   progress?: number;
   isActive?: boolean;
   onClickOverride?: () => void;

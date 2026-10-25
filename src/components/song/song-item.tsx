@@ -14,7 +14,7 @@ import { useSearchParamsHelpers } from '@/hooks/use-search-params-helpers';
 import { ThreeDotMenu } from '../ui/three-dot-menu';
 
 interface SongItemProps {
-  song: SongData | null;
+  song: SongData;
   progress?: number | null;
   isActive?: boolean | null;
   onClickOverride?: () => void;
@@ -30,27 +30,6 @@ interface SongItemProps {
 }
 
 function SongItemImpl({ song, progress = null, isActive = null, onClickOverride, iconOverride, menu }: SongItemProps) {
-  if (song === null) return (
-    <Item className="h-16 p-0 pr-3 border border-b-border rounded-none overflow-hidden group hover:bg-card hover:cursor-pointer relative">
-      <ItemMedia className="h-full translate-0! p-1.5">
-        <div className="aspect-square relative h-full">
-          <Skeleton className="w-full h-full" />
-        </div>
-      </ItemMedia>
-      <ItemContent className="text-nowrap overflow-hidden">
-        <ItemTitle className="text-[14px] font-medium group-hover:underline">
-          <Skeleton className="w-32 h-4 my-1" />
-        </ItemTitle>
-        <ItemDescription className="flex gap-2">
-          <Skeleton className="w-32 h-3 my-1" />
-        </ItemDescription>
-      </ItemContent>
-      <ItemActions>
-        <Skeleton />
-      </ItemActions>
-    </Item>
-  )
-
   const pathname = usePathname();
   const { getUpdatedSearchParams } = useSearchParamsHelpers();
 

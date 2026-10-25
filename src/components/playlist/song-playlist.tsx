@@ -25,6 +25,7 @@ import {
 import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers";
 import { SortableSongItem } from "../song/sortable-song-item";
 import { SongDragPreview } from "../song/song-drag-preview";
+import { SongItemGhost } from "../song/song-item-ghost";
 
 interface SongPlaylistProps {
   title?: string;
@@ -155,9 +156,14 @@ export function SongPlaylist({
             const progress = isPlaying
               ? (audioState.currentTime / audioState.duration) * 100
               : undefined;
+
+            if (!song) {
+              return <SongItemGhost key={i} />;
+            }
+
             return (
               <SongItem
-                key={song?.id ?? i}
+                key={song?.id}
                 song={song}
                 progress={progress}
                 isActive={!!progress}
@@ -187,6 +193,11 @@ export function SongPlaylist({
                 const progress = isPlaying
                   ? (audioState.currentTime / audioState.duration) * 100
                   : undefined;
+
+                if (song === null) {
+                  return <SongItemGhost key={id} />;
+                }
+
                 return (
                   <SortableSongItem
                     key={id}

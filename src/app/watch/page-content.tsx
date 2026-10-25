@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Loader2, AlertCircle, Play, ArrowDownToLine, Check, X, Text, WifiOff, Repeat, CloudDownload, Plus, Trash } from "lucide-react";
+import { Loader2, AlertCircle, Play, ArrowDownToLine, Check, X, Text, WifiOff, Repeat, CloudDownload } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button, buttonVariants } from "@/components/ui/button";
