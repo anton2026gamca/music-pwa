@@ -123,42 +123,44 @@ export default function PlaylistPage() {
                 >
                   <Shuffle className="size-5" /> Shuffle
                 </Button>
-                <DialogButton
-                  className="rounded-full gap-2" size="lg" variant="secondary"
-                  dialogTitle={`Rename Playlist "${displayName}"`}
-                  confirmText="Rename"
-                  fields={[
-                    {
-                      id: "newName",
-                      label: "New Name",
-                      type: "text",
-                      defaultValue: displayName
-                    }
-                  ]}
-                  onConfirm={(formValues) => {
-                    const key = createPlaylistKey(formValues.newName);
+                {!["downloaded_songs", "current_playlist"].includes(playlistKey) && (
+                  <DialogButton
+                    className="rounded-full gap-2" size="lg" variant="secondary"
+                    dialogTitle={`Rename Playlist "${displayName}"`}
+                    confirmText="Rename"
+                    fields={[
+                      {
+                        id: "newName",
+                        label: "New Name",
+                        type: "text",
+                        defaultValue: displayName
+                      }
+                    ]}
+                    onConfirm={(formValues) => {
+                      const key = createPlaylistKey(formValues.newName);
 
-                    if (key === playlistKey) {
-                      return;
-                    }
+                      if (key === playlistKey) {
+                        return;
+                      }
 
-                    if (getSongsList(key).length > 0) {
-                      setTimeout(() => {
-                        window.alert(`A playlist with the key "${key}" already exists. Please choose a different name.`);
-                      }, 0);
-                      return;
-                    }
+                      if (getSongsList(key).length > 0) {
+                        setTimeout(() => {
+                          window.alert(`A playlist with the key "${key}" already exists. Please choose a different name.`);
+                        }, 0);
+                        return;
+                      }
 
-                    const songs = getSongsList(playlistKey);
+                      const songs = getSongsList(playlistKey);
 
-                    deleteList(playlistKey);
-                    saveList(key, songs);
+                      deleteList(playlistKey);
+                      saveList(key, songs);
 
-                    router.push(`/playlist?id=${encodeURIComponent(key)}`);
-                  }}
-                >
-                  <TextCursor className="size-4" /> Rename
-                </DialogButton>
+                      router.push(`/playlist?id=${encodeURIComponent(key)}`);
+                    }}
+                  >
+                    <TextCursor className="size-4" /> Rename
+                  </DialogButton>
+                )}
                 {!["downloaded_songs", "current_playlist"].includes(playlistKey) && (
                   <DialogButton
                     className="rounded-full gap-2" size="lg"
