@@ -10,8 +10,6 @@ import { SongItem } from "./song-item";
 interface SortableSongItemProps {
   id: string;
   song: SongData;
-  progress?: number;
-  isActive?: boolean;
   onClickOverride?: () => void;
   iconOverride?: React.JSX.Element;
   menu?: Array<{
@@ -27,8 +25,6 @@ interface SortableSongItemProps {
 function SortableSongItemImpl({
   id,
   song,
-  progress,
-  isActive,
   onClickOverride,
   iconOverride,
   menu,
@@ -64,8 +60,6 @@ function SortableSongItemImpl({
       <div className="flex-1 min-w-0">
         <SongItem
           song={song}
-          progress={progress}
-          isActive={isActive}
           onClickOverride={onClickOverride}
           iconOverride={iconOverride}
           menu={menu}

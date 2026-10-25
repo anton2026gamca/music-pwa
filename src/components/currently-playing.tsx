@@ -7,13 +7,11 @@ export function CurrentlyPlaying() {
   const { state } = useAudio();
   const { song } = useFetchSongData(state.currentSong?.id ?? null);
 
-  const progress = state.duration > 0 ? (state.currentTime / state.duration) * 100 : null;
-
   if (song === null || state.currentTime === 0) {
     return null;
   }
 
   return (
-    <SongItem song={song} progress={progress} />
+    <SongItem song={song} />
   )
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { SongData } from '@/app/api/actions';
-import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
+import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
 
 export interface AudioState {
   currentSong: SongData | null;
@@ -12,8 +12,7 @@ export interface AudioState {
   ended?: boolean;
 }
 
-interface AudioContextType {
-  state: AudioState;
+interface AudioControls {
   loadSong: (src: string, songData: SongData) => void;
   playSong: (src: string, songData: SongData) => void;
   pause: () => void;
@@ -25,12 +24,12 @@ interface AudioContextType {
   setPrevHandler: (handler: (() => void) | null) => void;
 }
 
-const AudioContext = createContext<AudioContextType | undefined>(undefined);
+const AudioStateContext = createContext<AudioState | undefined>(undefined);
+const AudioControlsContext = createContext<AudioControls | undefined>(undefined);
 
 export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const listenersRef = useRef<Set<(state: AudioState) => void>>(new Set());
-
   const nextTrackHandlerRef = useRef<(() => void) | null>(null);
   const prevTrackHandlerRef = useRef<(() => void) | null>(null);
 
@@ -42,12 +41,9 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
     volume: 1,
   });
 
-  const emitChange = (updates: Partial<AudioState> = {}) => {
+  const emitChange = useCallback((updates: Partial<AudioState> = {}) => {
     setState((prev) => ({ ...prev, ended: false, ...updates }));
-    if (updates.currentTime === undefined || updates.isPlaying !== undefined) {
-      console.log("Audio state updated: ", updates);
-    }
-  };
+  }, []);
 
   useEffect(() => {
     listenersRef.current.forEach((callback) => callback(state));
@@ -71,7 +67,7 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
       audio.remove();
       audioRef.current = null;
     };
-  }, []);
+  }, [emitChange]);
 
   useEffect(() => {
     if (!('mediaSession' in navigator) || !state.currentSong) return;
@@ -85,6 +81,7 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
     navigator.mediaSession.setActionHandler('nexttrack', nextTrackHandlerRef.current ? () => nextTrackHandlerRef.current?.() : null);
     navigator.mediaSession.setActionHandler('previoustrack', prevTrackHandlerRef.current ? () => prevTrackHandlerRef.current?.() : null);
     navigator.mediaSession.setActionHandler('stop', () => { audioRef.current?.pause(); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.currentSong]);
 
   useEffect(() => {
@@ -97,85 +94,90 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
     const id = setInterval(() => {
       const audio = audioRef.current;
       if (!audio || audio.paused) return;
-
       const { duration, currentTime, playbackRate } = audio;
       if (!Number.isFinite(duration) || duration <= 0) return;
       if (!Number.isFinite(currentTime)) return;
-
       navigator.mediaSession.setPositionState({
         duration,
         playbackRate: Number.isFinite(playbackRate) && playbackRate > 0 ? playbackRate : 1,
-        position: Math.min(currentTime, duration), // position must not exceed duration, or this also throws
+        position: Math.min(currentTime, duration),
       });
     }, 500);
     return () => clearInterval(id);
   }, [state.duration]);
 
-  const setNextHandler = (handler: (() => void) | null) => { nextTrackHandlerRef.current = handler; };
-  const setPrevHandler = (handler: (() => void) | null) => { prevTrackHandlerRef.current = handler; };
+  const setNextHandler = useCallback((handler: (() => void) | null) => { nextTrackHandlerRef.current = handler; }, []);
+  const setPrevHandler = useCallback((handler: (() => void) | null) => { prevTrackHandlerRef.current = handler; }, []);
 
-  const loadSong = (src: string, songData: SongData) => {
+  const loadSong = useCallback((src: string, songData: SongData) => {
     if (!audioRef.current || !src) return;
     if (audioRef.current.src !== src) {
       audioRef.current.src = src;
       audioRef.current.load();
       emitChange({ currentSong: songData, currentTime: 0, duration: 0 });
     }
-  };
+  }, [emitChange]);
 
-  const playSong = (src: string, songData: SongData) => {
+  const playSong = useCallback((src: string, songData: SongData) => {
     if (!audioRef.current) return;
     if (audioRef.current.src !== src && src) {
       audioRef.current.src = src;
     }
-    console.log("Playing song:", songData.title, "from src:", src);
     emitChange({ currentSong: songData, isPlaying: true });
     audioRef.current.play().catch((err) => console.warn("Playback blocked:", err));
-  };
+  }, [emitChange]);
 
-  const pause = () => {
-    audioRef.current?.pause();
-  };
+  const pause = useCallback(() => { audioRef.current?.pause(); }, []);
 
-  const togglePlay = () => {
+  const togglePlay = useCallback(() => {
     if (!audioRef.current || !audioRef.current.src) return;
     if (audioRef.current.paused) {
       audioRef.current.play().catch(() => { });
     } else {
       audioRef.current.pause();
     }
-  };
+  }, []);
 
-  const seek = (seconds: number) => {
+  const seek = useCallback((seconds: number) => {
     if (!audioRef.current) return;
     audioRef.current.currentTime = seconds;
     emitChange({ currentTime: seconds });
-  };
+  }, [emitChange]);
 
-  const setVolume = (level: number) => {
+  const setVolume = useCallback((level: number) => {
     if (!audioRef.current) return;
     const clamped = Math.max(0, Math.min(1, level));
     audioRef.current.volume = clamped;
     emitChange({ volume: clamped });
-  };
+  }, [emitChange]);
 
-  const subscribe = (callback: (state: AudioState) => void) => {
+  const subscribe = useCallback((callback: (state: AudioState) => void) => {
     listenersRef.current.add(callback);
+    return () => { listenersRef.current.delete(callback); };
+  }, []);
 
-    return () => {
-      listenersRef.current.delete(callback);
-    };
-  };
+  const controls = useMemo<AudioControls>(() => ({
+    loadSong, playSong, pause, togglePlay, seek, setVolume, subscribe, setNextHandler, setPrevHandler,
+  }), [loadSong, playSong, pause, togglePlay, seek, setVolume, subscribe, setNextHandler, setPrevHandler]);
 
   return (
-    <AudioContext.Provider value={{ state, loadSong, playSong, pause, togglePlay, seek, setVolume, subscribe, setNextHandler, setPrevHandler }}>
-      {children}
-    </AudioContext.Provider>
+    <AudioControlsContext.Provider value={controls}>
+      <AudioStateContext.Provider value={state}>
+        {children}
+      </AudioStateContext.Provider>
+    </AudioControlsContext.Provider>
   );
 };
 
 export const useAudio = () => {
-  const context = useContext(AudioContext);
-  if (!context) throw new Error('useAudio must be executed inside a valid AudioProvider hierarchy.');
-  return context;
+  const state = useContext(AudioStateContext);
+  const controls = useContext(AudioControlsContext);
+  if (!state || !controls) throw new Error('useAudio must be executed inside a valid AudioProvider hierarchy.');
+  return { state, ...controls };
+};
+
+export const useAudioControls = () => {
+  const controls = useContext(AudioControlsContext);
+  if (!controls) throw new Error('useAudioControls must be executed inside a valid AudioProvider hierarchy.');
+  return controls;
 };

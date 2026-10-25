@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { Switch } from "../ui/switch";
-import { SongItem } from "../song/song-item";
 import { Separator } from "../ui/separator";
 import { usePlaylist } from "@/context/playlist-context";
 import { SongData } from "@/app/api/actions";
 import { SongPlaylist } from "./song-playlist";
-import { Play, Plus } from "lucide-react";
+import { Play } from "lucide-react";
+import { SongItemGhost } from "../song/song-item-ghost";
 
 export function PlayNextList() {
   const {
@@ -46,7 +46,7 @@ export function PlayNextList() {
         )}
 
         {loading && [0, 1, 2, 3, 4].map((i) => (
-          <SongItem key={i} song={null} />
+          <SongItemGhost key={i} />
         ))}
 
         {!loading && enabled && playNextList && (

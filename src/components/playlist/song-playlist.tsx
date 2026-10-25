@@ -62,7 +62,6 @@ export function SongPlaylist({
   getMenu,
 }: SongPlaylistProps) {
   const [isOpen, setIsOpen] = useState(true);
-  const { state: audioState } = useAudio();
 
   const [localSongs, setLocalSongs] = useState<Array<string | SongData>>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -152,11 +151,6 @@ export function SongPlaylist({
       {isOpen && !enableReorder && (
         <div>
           {resolvedSongs.map((song, i) => {
-            const isPlaying = song?.id === audioState.currentSong?.id;
-            const progress = isPlaying
-              ? (audioState.currentTime / audioState.duration) * 100
-              : undefined;
-
             if (!song) {
               return <SongItemGhost key={i} />;
             }
@@ -165,8 +159,6 @@ export function SongPlaylist({
               <SongItem
                 key={song?.id}
                 song={song}
-                progress={progress}
-                isActive={!!progress}
                 onClickOverride={onClickOverrides?.[i] ?? undefined}
                 iconOverride={iconOverrides?.[i] ?? undefined}
                 menu={getMenu?.(song, i) ?? undefined}
@@ -189,10 +181,6 @@ export function SongPlaylist({
             <div>
               {resolvedSongs.map((song, i) => {
                 const id = itemIds[i];
-                const isPlaying = song?.id === audioState.currentSong?.id;
-                const progress = isPlaying
-                  ? (audioState.currentTime / audioState.duration) * 100
-                  : undefined;
 
                 if (song === null) {
                   return <SongItemGhost key={id} />;
@@ -203,8 +191,6 @@ export function SongPlaylist({
                     key={id}
                     id={id}
                     song={song}
-                    progress={progress}
-                    isActive={!!progress}
                     onClickOverride={onClickOverrides?.[i] ?? undefined}
                     iconOverride={iconOverrides?.[i] ?? undefined}
                     menu={getMenu?.(song, i) ?? undefined}

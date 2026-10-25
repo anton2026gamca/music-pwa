@@ -12,11 +12,10 @@ import { Skeleton } from '../ui/skeleton';
 import { usePathname } from 'next/navigation';
 import { useSearchParamsHelpers } from '@/hooks/use-search-params-helpers';
 import { ThreeDotMenu } from '../ui/three-dot-menu';
+import { useSongProgress } from '@/hooks/use-song-progress';
 
 interface SongItemProps {
   song: SongData;
-  progress?: number | null;
-  isActive?: boolean | null;
   onClickOverride?: () => void;
   iconOverride?: React.JSX.Element;
   menu?: Array<{
@@ -29,13 +28,15 @@ interface SongItemProps {
   }>
 }
 
-function SongItemImpl({ song, progress = null, isActive = null, onClickOverride, iconOverride, menu }: SongItemProps) {
+function SongItemImpl({ song, onClickOverride, iconOverride, menu }: SongItemProps) {
   const pathname = usePathname();
   const { getUpdatedSearchParams } = useSearchParamsHelpers();
 
   const [mounted, setMounted] = useState(false);
 
   const [offlineAssets, setOfflineAssets] = useState<OfflineAssets | null>(null);
+
+  const { progress, isActive } = useSongProgress(song.id);
 
   const songId = song.id;
   const title = song.title;
