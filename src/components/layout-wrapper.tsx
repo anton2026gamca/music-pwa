@@ -22,6 +22,10 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
 
   const router = useRouter();
 
+  useEffect(() => {
+    ["/", "/watch", "/search", "/playlist"].forEach((path) => router.prefetch(path));
+  }, [router]);
+
   const handleInitialSearchSubmit = (query: string) => {
     router.push(`/search?q=${encodeURIComponent(query)}`);
   };

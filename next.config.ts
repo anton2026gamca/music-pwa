@@ -8,6 +8,7 @@ const withSerwist = withSerwistInit({
     { url: "/", revision: Date.now().toString() },
     { url: "/watch", revision: Date.now().toString() },
     { url: "/search", revision: Date.now().toString() },
+    { url: "/playlist", revision: Date.now().toString() },
   ],
 });
 
