@@ -5,8 +5,10 @@ A music player progressive web application (PWA), for listening to music, downlo
 > [!NOTE]
 > Why isn't this project hosted on Vercel or any other hosting platform?
 > 
-> **Downloads fail with `"Video is login required"`**
+> **Downloads fail with `"Video is login required"`**ance is ending and everything must go. E
 > This is YouTube's anti-bot protection denying requests from known datacenter IP ranges
+
+https://github.com/user-attachments/assets/b610dfcc-2906-4ed2-a518-883b26d817f3
 
 ## Features
 
