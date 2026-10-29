@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Music PWA
 
-## Getting Started
+A music player progressive web application (PWA), for listening to music, downloading it, viewing the lyrics (with synced lyrics), listening to it with your phone screen off, and listening without an internet connection!
 
-First, run the development server:
+> [!NOTE]
+> Why isn't this project hosted on Vercel or any other hosting platform?
+> 
+> **Downloads fail with `"Video is login required"`**
+> This is YouTube's anti-bot protection denying requests from known datacenter IP ranges
+
+## Features
+
+- Search and play songs
+- Synced lyrics
+- Background playback (screen off)
+- Download songs for offline playback
+- Installable as a PWA (offline support, home screen icon)
+
+## Try it out
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/anton2026gamca/music-pwa
+cd music-pwa
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The service worker (offline support and PWA functionality) is **disabled in dev mode** — `npm run dev` is fine for trying the app out online, on a laptop, but to actually try the PWA/offline features you need a production build:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build
+npm run start
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Trying it out on your phone
 
-## Learn More
+A PWA needs to be hosted on HTTPS to be installable and for the service worker to work. The easiest way to do this with a locally running server, is a reverse tunnel:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run build
+npm run start
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+In a second terminal:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npx cloudflared tunnel --url http://localhost:3000
+```
 
-## Deploy on Vercel
+Open the printed HTTPS URL on your phone (same Wi-Fi isn't required, since it's a public tunnel URL) and install it:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Android (Chrome):** you should see an "Install app" banner, or open the **⋮** menu → **Add to Home screen** / **Install app**.
+- **iPhone (Safari):** tap the **Share** button → **Add to Home Screen**.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> [!NOTE]
+> The PWA support doesn't work on firefox
+
+Once installed, it opens full-screen from your home screen like a native app (no url bar, etc.)
