@@ -1,11 +1,10 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Loader2, AlertCircle, Play, ArrowDownToLine, Check, X, Text, WifiOff, Repeat, CloudDownload } from "lucide-react";
-
+import { Loader2, AlertCircle, Play, ArrowDownToLine, Check, X, Text, WifiOff, Repeat, CloudDownload, ArrowLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -38,6 +37,8 @@ export default function WatchPageContent() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  const router = useRouter();
 
   const online = useOnline();
 
@@ -87,7 +88,7 @@ export default function WatchPageContent() {
   const [showLyrics, setShowLyrics] = useState(false);
 
   const loading = songLoading || offlineAssetsLoading;
-  const error = songError ?? offlineAssetsError;
+  const error = songError ?? offlineAssetsError ?? globalAudioState.error?.message ?? null;
 
   useEffect(() => {
     let songUrl: string | null = null;
@@ -162,8 +163,13 @@ export default function WatchPageContent() {
   }, [handlePlayPause]);
 
   useEffect(() => {
-    const ready = (offlineAssets && (offlineAssets.isOffline || globalAudioState.currentSong?.id === song?.id && globalAudioState.currentTime > 0)) ?? false;
+    const ready = (offlineAssets && (
+      offlineAssets.isOffline ||
+      globalAudioState.currentSong?.id === song?.id && globalAudioState.currentTime > 0
+    )) ?? false;
+
     setAudioReady(ready);
+
     if (ready) {
       setVideoDownloading(false);
     }
@@ -173,29 +179,94 @@ export default function WatchPageContent() {
     return null;
   }
 
-  if (!online && (offlineAssets && !offlineAssets.isOffline || !song)) {
+  const isCurrentlyActiveInPlayer = globalAudioState.currentSong?.id === songIdParam;
+  const isSongAvailableOffline = offlineAssets?.isOffline === true;
+
+  if (!online && !isSongAvailableOffline && !isCurrentlyActiveInPlayer) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center bg-background">
-        <WifiOff className="h-10 w-10 text-destructive mb-3" />
-        <h2 className="text-lg font-semibold tracking-tight">No internet connection</h2>
-        <p className="text-sm text-muted-foreground mb-4">Please connect to the internet.</p>
+      <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-background">
+        <div className="relative w-full max-w-md p-6 border rounded-xl bg-card text-card-foreground shadow-sm flex flex-col items-center text-center space-y-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-3 left-3 text-muted-foreground hover:text-foreground rounded-full"
+            onClick={() => router.back()}
+            aria-label="Go back"
+          >
+            <ArrowLeft className="size-5" />
+          </Button>
+
+          <div className="rounded-full p-4 bg-muted text-muted-foreground animate-pulse">
+            <WifiOff className="h-10 w-10" />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold tracking-tight">You're Offline</h2>
+            <p className="text-sm text-muted-foreground px-4">
+              This song hasn't been downloaded yet. Connect to the internet or browse your downloaded songs.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2 w-full">
+            <Button
+              variant="default"
+              onClick={() => window.location.reload()}
+            >
+              Reload page
+            </Button>
+
+            <Link
+              href="/playlist?id=downloaded_songs"
+              className={cn(buttonVariants({ variant: "outline" }))}
+            >
+              Go to Downloaded Songs
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center bg-background">
-        <AlertCircle className="h-10 w-10 text-destructive mb-3" />
-        <h2 className="text-lg font-semibold tracking-tight">Error!</h2>
-        <p className="text-sm text-muted-foreground mb-4">{error}</p>
+      <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-background">
+        <div className="relative w-full max-w-md p-6 border rounded-xl bg-card text-card-foreground shadow-sm flex flex-col items-center text-center space-y-6">
+          <div className="rounded-full p-4 bg-destructive/10 text-destructive animate-pulse">
+            <AlertCircle className="h-10 w-10" />
+          </div>
 
-        <Link
-          href="/search"
-          className={cn(buttonVariants({ variant: "outline" }))}
-        >
-          Return to Search
-        </Link>
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold tracking-tight">Something went wrong</h2>
+            <p className="text-sm text-muted-foreground px-2">
+              An error occurred while trying to load the song. Please try refreshing.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+            <Button
+              className="w-full sm:flex-1"
+              onClick={() => window.location.reload()}
+            >
+              Try Again
+            </Button>
+            <Link
+              href="/search"
+              className={cn(buttonVariants({ variant: "outline" }), "w-full sm:flex-1")}
+            >
+              Go to Search
+            </Link>
+          </div>
+
+          <details className="w-full text-left bg-muted/50 rounded-lg p-3 cursor-pointer group">
+            <summary className="text-xs font-medium text-muted-foreground select-none list-none flex items-center justify-between group-open:mb-2">
+              <span>Error message</span>
+              <span className="transition-transform duration-200 group-open:rotate-180">▼</span>
+            </summary>
+            <p className="text-xs font-mono text-destructive/90 break-all bg-background p-2 rounded border max-h-24 overflow-y-auto whitespace-pre-wrap">
+              {error}
+            </p>
+          </details>
+        </div>
       </div>
     );
   }

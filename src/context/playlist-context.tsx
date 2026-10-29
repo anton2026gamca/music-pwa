@@ -184,7 +184,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
   }, [currentSong]);
 
   const playNextSong = useCallback(async (songOverride?: SongData) => {
-    console.log("Attempting to play next song...", { songOverride, currentSong, playlist, playNextList });
+    // console.log("Attempting to play next song...", { songOverride, currentSong, playlist, playNextList });
 
     const playlistIndex = playlist?.findIndex((song) => song.id === currentSong?.id) ?? -1;
     const isLast = !playlist || playlist.length === 0 || playlistIndex === playlist?.length - 1;

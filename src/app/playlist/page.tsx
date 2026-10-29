@@ -72,11 +72,7 @@ export default function PlaylistPage() {
     saveList(playlistKey, standardIds);
   };
 
-  if (!mounted) return (
-    <div>
-
-    </div>
-  )
+  if (!mounted) return <div></div>
 
   return (
     <div className="h-full max-h-full bg-background text-foreground flex flex-col relative">

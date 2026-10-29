@@ -1,7 +1,7 @@
 'use client';
 
 import { Item, ItemActions, ItemContent, ItemTitle, ItemMedia } from '../ui/item';
-import { ArrowRight, Download } from 'lucide-react';
+import { ArrowRight, Download, Music } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { memo, useEffect, useState } from 'react';
@@ -107,7 +107,7 @@ function PlaylistItemImpl({ playlistKey, isActive = null, onClickOverride, iconO
               loading="lazy"
             />
           ) : (
-            <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/40" />
+            <Music className="size-6 text-muted-foreground" />
           )}
         </div>
       </ItemMedia>

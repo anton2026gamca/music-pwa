@@ -10,6 +10,7 @@ export interface AudioState {
   duration: number;
   volume: number;
   ended?: boolean;
+  error: MediaError | null;
 }
 
 interface AudioControls {
@@ -39,6 +40,7 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
     currentTime: 0,
     duration: 0,
     volume: 1,
+    error: null,
   });
 
   const emitChange = useCallback((updates: Partial<AudioState> = {}) => {
@@ -61,6 +63,10 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
     audio.onloadedmetadata = () => emitChange({ duration: audio.duration });
     audio.ontimeupdate = () => emitChange({ currentTime: audio.currentTime });
     audio.onended = () => emitChange({ isPlaying: false, currentTime: 0, ended: true });
+    audio.onerror = () => {
+      console.error("Audio playback error:", audio.error);
+      emitChange({ isPlaying: false, currentTime: 0, error: audio.error });
+    };
 
     return () => {
       audio.pause();
@@ -114,7 +120,7 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
     if (audioRef.current.src !== src) {
       audioRef.current.src = src;
       audioRef.current.load();
-      emitChange({ currentSong: songData, currentTime: 0, duration: 0 });
+      emitChange({ currentSong: songData, currentTime: 0, duration: 0, error: null });
     }
   }, [emitChange]);
 
@@ -123,7 +129,7 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
     if (audioRef.current.src !== src && src) {
       audioRef.current.src = src;
     }
-    emitChange({ currentSong: songData, isPlaying: true });
+    emitChange({ currentSong: songData, isPlaying: true, error: null });
     audioRef.current.play().catch((err) => console.warn("Playback blocked:", err));
   }, [emitChange]);
 
