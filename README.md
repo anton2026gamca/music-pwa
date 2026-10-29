@@ -2,13 +2,19 @@
 
 A music player progressive web application (PWA), for listening to music, downloading it, viewing the lyrics (with synced lyrics), listening to it with your phone screen off, and listening without an internet connection!
 
-> [!NOTE]
+> [!IMPORTANT]
 > Why isn't this project hosted on Vercel or any other hosting platform?
 > 
-> **Downloads fail with `"Video is login required"`**ance is ending and everything must go. E
+> **Downloads fail with `"Video is login required"`** <br>
 > This is YouTube's anti-bot protection denying requests from known datacenter IP ranges
+> 
+> To try the project out locally, see the [try it out](#try-it-out) section
 
 https://github.com/user-attachments/assets/b610dfcc-2906-4ed2-a518-883b26d817f3
+
+<img width="1873" height="1032" alt="image" src="https://github.com/user-attachments/assets/386b9a6c-7980-4e3b-966d-64e916924bb7" />
+<img width="1871" height="1035" alt="image" src="https://github.com/user-attachments/assets/2017fb2d-95be-425f-b900-f870617499ec" />
+<img width="1873" height="1034" alt="image" src="https://github.com/user-attachments/assets/3c3ecdb5-79fb-40b8-a2ea-3b8e57ee4164" />
 
 ## Features
 
